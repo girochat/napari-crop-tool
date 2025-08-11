@@ -53,10 +53,8 @@ def build_cropping_widget(
         if len(selected_rois) > 1:
             message_label.value = "Please select only one cropping box!"
             return
-        print(selected_rois)
         shape_idx = next(iter(selected_rois))
         get_slice_btn.shape_idx = shape_idx
-        print(shape_idx)
         if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
             shapes_layer.properties["z_start_um"][shape_idx] = min_z_um
             shapes_layer.properties["z_end_um"][shape_idx] = max_z_um
@@ -96,7 +94,6 @@ def build_cropping_widget(
 
     def on_set_stop():
         message_label.value = ""
-        print(viewer.dims.current_step)
         value = viewer.dims.current_step[-3]
         selected_rois = shapes_layer.selected_data
         if len(selected_rois) == 0:
