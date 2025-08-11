@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
-from magicgui import magicgui
-from magicgui.widgets import Container
+from magicgui import magic_factory, magicgui
+from magicgui.widgets import Container, Label
 from napari import Viewer
 from napari.layers import Image, Labels, Layer
 
@@ -28,10 +28,7 @@ def _layer_choices(
             pairs.append((layer.name, layer))
     return pairs
 
-@magicgui(
-    call_button="Launch Crop Toolbox",
-    target_layer={"label": "Target layer", "choices": _layer_choices},
-)
+@magic_factory
 def crop_roi_widget(
     viewer: Viewer,
     target_layer: Layer | None = None,
@@ -52,7 +49,8 @@ def crop_roi_widget(
     if target_layer is None:
         # You can also show a message box, but this keeps it quiet in console
         print("No eligible layer selected. Please choose an Image or Labels layer.")
-        return None
+        return Container(
+            widgets=[Label(value="Select an Image or Labels layer to use this tool.")])
 
     # Attach cropping toolbox to the chosen layer
     return define_crop_on_layer(viewer=viewer, target_layer=target_layer)

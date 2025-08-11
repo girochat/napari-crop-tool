@@ -24,7 +24,7 @@ def build_cropping_widget(
     saved_state = {
         "rois": {},
     }
-    min_z_um, max_z_um, _ = viewer.dims.range[0]
+    min_z_um, max_z_um, _ = viewer.dims.range[-3]
     min_z = round(min_z_um / scale[0])
     max_z = round(max_z_um / scale[0])
 
@@ -53,8 +53,10 @@ def build_cropping_widget(
         if len(selected_rois) > 1:
             message_label.value = "Please select only one cropping box!"
             return
+        print(selected_rois)
         shape_idx = next(iter(selected_rois))
         get_slice_btn.shape_idx = shape_idx
+        print(shape_idx)
         if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
             shapes_layer.properties["z_start_um"][shape_idx] = min_z_um
             shapes_layer.properties["z_end_um"][shape_idx] = max_z_um
@@ -71,7 +73,7 @@ def build_cropping_widget(
     # Assign slice start/stop from current slider
     def on_set_start():
         message_label.value = ""
-        value = viewer.dims.current_step[0]
+        value = viewer.dims.current_step[-3]
         selected_rois = shapes_layer.selected_data
         if len(selected_rois) == 0:
             message_label.value = "\nNo cropping box selected!"
@@ -94,7 +96,8 @@ def build_cropping_widget(
 
     def on_set_stop():
         message_label.value = ""
-        value = viewer.dims.current_step[0]
+        print(viewer.dims.current_step)
+        value = viewer.dims.current_step[-3]
         selected_rois = shapes_layer.selected_data
         if len(selected_rois) == 0:
             message_label.value = "\nNo cropping box selected!"
@@ -140,13 +143,13 @@ def build_cropping_widget(
     # Re-enable the start/stop buttons to reset the slice range
     def reset_slice():
         shape_idx = get_slice_btn.shape_idx
-        start_label.value = f"Z start: {
-            int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])
-            }"
+        start_label.value = (
+            f"Z start: "
+            f"{int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
+        )
         stop_label.value = (
-            f"Z end: {
-                int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])
-                }"
+            f"Z end: "
+            f"{int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
         )
         set_start_btn.enabled = True
         set_stop_btn.enabled = True
@@ -259,6 +262,8 @@ def define_crop_on_layer(
     """
     # Determine the reference scale from the selected layer
     scale = _get_scale_from_layer(target_layer)
+    print(scale)
+    print(target_layer.ndim)
 
     # Create one shapes layer for drawing crop boxes (XY rectangles)
     shapes_layer = viewer.add_shapes(
