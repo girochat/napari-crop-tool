@@ -1,16 +1,16 @@
-from typing import Optional
-from magicgui.widgets import Container, PushButton, Label
-from napari import Viewer
-from napari.layers import Shapes, Layer
 import numpy as np
+from magicgui.widgets import Container, Label, PushButton
+from napari import Viewer
+from napari.layers import Image, Labels, Layer, Shapes
+
 
 def build_cropping_widget(
-        viewer: Viewer,
-        shapes_layer: Shapes,
-        scale: tuple) -> Container:
-    """
-    Build a cropping widget for selecting one or several region of interest (ROI) 
-    in the image.
+    viewer: Viewer, shapes_layer: Shapes, scale: tuple
+) -> Container:
+    """Build a cropping widget.
+
+    The cropping widget allows the user to define one or several region of interests
+    (ROI) in the image for which the cropping coordinates will be saved.
 
     Parameters:
         viewer (Viewer): The napari viewer instance.
@@ -20,7 +20,6 @@ def build_cropping_widget(
     Returns:
         Container: The cropping widget container.
     """
-    
     # State to store current slicing axis and shape range records
     saved_state = {
         "rois": {},
@@ -32,14 +31,14 @@ def build_cropping_widget(
     # UI elements
     get_slice_btn = PushButton(label="Get Z Slice Range")
     slice_label = Label(value="Current Z slice range:")
-    start_label = Label(value=f"Z start:")
-    stop_label = Label(value=f"Z end:")
+    start_label = Label(value="Z start:")
+    stop_label = Label(value="Z end:")
     set_start_btn = PushButton(label="Set Z Start from Cursor")
     set_stop_btn = PushButton(label="Set Z End from Cursor")
     confirm_btn = PushButton(label="Confirm", visible=False)
     reset_btn = PushButton(label="Reset", visible=False)
     save_btn = PushButton(label="Save Crop Coordinates (All)")
-    message_label = Label(value=f"")
+    message_label = Label(value="")
 
     # Get current slice range when get button is clicked
     def on_get_slice_clicked():
@@ -54,13 +53,18 @@ def build_cropping_widget(
         if len(selected_rois) > 1:
             message_label.value = "Please select only one cropping box!"
             return
-        shape_idx = list(selected_rois)[0]
-        setattr(get_slice_btn, "shape_idx", shape_idx)
+        shape_idx = next(iter(selected_rois))
+        get_slice_btn.shape_idx = shape_idx
         if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
             shapes_layer.properties["z_start_um"][shape_idx] = min_z_um
             shapes_layer.properties["z_end_um"][shape_idx] = max_z_um
-        start_label.value = f"Z start: {int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
-        stop_label.value = f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
+        start_label.value =(
+            f"Z start: "
+            f"{int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
+        )
+        stop_label.value = (
+            f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
+        )
 
     get_slice_btn.changed.connect(on_get_slice_clicked)
 
@@ -77,9 +81,12 @@ def build_cropping_widget(
             message_label.value = "\nPlease select only one cropping box!"
             restart_slice()
             return
-        shape_idx = getattr(get_slice_btn, "shape_idx")
+        shape_idx = get_slice_btn.shape_idx
         shapes_layer.properties["z_start_um"][shape_idx] = value * scale[0]
-        start_label.value = f"Z start: {int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
+        start_label.value = (
+            f"Z start: "
+            f"{int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
+        )
         set_start_btn.enabled = False
         if not (set_start_btn.enabled) and not (set_stop_btn.enabled):
             reset_btn.visible = True
@@ -97,20 +104,22 @@ def build_cropping_widget(
             message_label.value = "\nPlease select only one cropping box!"
             restart_slice()
             return
-        shape_idx = getattr(get_slice_btn, "shape_idx")
+        shape_idx = get_slice_btn.shape_idx
         shapes_layer.properties["z_end_um"][shape_idx] = value * scale[0]
-        stop_label.value = f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
+        stop_label.value = (
+            f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
+        )
         set_stop_btn.enabled = False
         if not (set_start_btn.enabled) and not (set_stop_btn.enabled):
             confirm_btn.visible = True
             reset_btn.visible = True
 
     def restart_slice():
-        start_label.value = f"Z start:"
-        stop_label.value = f"Z end:"
+        start_label.value = "Z start:"
+        stop_label.value = "Z end:"
         set_stop_btn.enabled = True
         set_start_btn.enabled = True
-        setattr(get_slice_btn, "shape_idx", None)
+        get_slice_btn.shape_idx = None
         confirm_btn.visible = False
         reset_btn.visible = False
 
@@ -130,9 +139,15 @@ def build_cropping_widget(
 
     # Re-enable the start/stop buttons to reset the slice range
     def reset_slice():
-        shape_idx = getattr(get_slice_btn, "shape_idx")
-        start_label.value = f"Z start: {int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
-        stop_label.value = f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
+        shape_idx = get_slice_btn.shape_idx
+        start_label.value = f"Z start: {
+            int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])
+            }"
+        stop_label.value = (
+            f"Z end: {
+                int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])
+                }"
+        )
         set_start_btn.enabled = True
         set_stop_btn.enabled = True
 
@@ -148,7 +163,7 @@ def build_cropping_widget(
             return
 
         for shape_idx in range(len(shapes_layer.data)):
-            #shape_idx = list(selected)[0]
+            # shape_idx = list(selected)[0]
             roi = shapes_layer.data[shape_idx]
             if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
                 z_start = min_z
@@ -159,12 +174,12 @@ def build_cropping_widget(
             else:
                 z_end = shapes_layer.properties["z_end_um"][shape_idx]
             roi_data = {
-                "x_start_um": min(roi[:,1]), 
-                "y_start_um": min(roi[:,0]),
-                "x_end_um": max(roi[:,1]), 
-                "y_end_um": max(roi[:,0]),
+                "x_start_um": min(roi[:, 1]),
+                "y_start_um": min(roi[:, 0]),
+                "x_end_um": max(roi[:, 1]),
+                "y_end_um": max(roi[:, 0]),
                 "z_start_um": z_start,
-                "z_end_um": z_end
+                "z_end_um": z_end,
             }
 
             # Save/update in session memory
@@ -176,20 +191,24 @@ def build_cropping_widget(
     crop_widget = Container(
         widgets=[
             Container(
-                widgets=[ 
+                widgets=[
                     get_slice_btn,
-                    Container(widgets=[
-                        slice_label,
-                        start_label,
-                        stop_label,
-                        set_start_btn,
-                        set_stop_btn,
-                        confirm_btn,
-                        reset_btn],
+                    Container(
+                        widgets=[
+                            slice_label,
+                            start_label,
+                            stop_label,
+                            set_start_btn,
+                            set_stop_btn,
+                            confirm_btn,
+                            reset_btn,
+                        ],
                         layout="vertical",
-                        ),
-                    save_btn]),
-            message_label
+                    ),
+                    save_btn,
+                ]
+            ),
+            message_label,
         ],
         layout="vertical",
         labels=True,
@@ -198,51 +217,56 @@ def build_cropping_widget(
 
     return crop_widget
 
+
 def _get_scale_from_layer(
     layer: Layer
 ) -> tuple:
-    """
-    Returns a full-length scale tuple (z,y,x) for 3D or (y,x) for 2D.
-    Falls back to ones if scale isn't set.
+    """Returns the scale of 3D or 2D layer.
+
+    It returns a full-length scale tuple (z,y,x) for 3D or (y,x) for 2D and falls back
+    to ones if scale isn't set.
+
+    Parameters:
+        layer (Layer): The napari layer instance.
+
+    Returns:
+        tuple: The scale of the layer.
     """
     scale = getattr(layer, "scale", None)
     if scale is None:
         data_ndim = getattr(layer, "ndim", 2)
         return tuple([1.0] * data_ndim)
-    
+
     return tuple(float(s) for s in scale)
 
 def define_crop_on_layer(
     viewer: Viewer,
-    target_layer: Layer,
+    target_layer: Layer | Image | Labels,
     shapes_name: str = "Cropping Box",
 ) -> Container:
-    """
-    Attach the cropping shapes + widget to the running viewer, using the
-    scale and dimensionality of the selected target_layer.
-    """
+    """Attaches the cropping shapes + widget to the running viewer.
 
+    The shapes layer and cropping widget are made aware of the scale and dimensionality
+    of the selected target_layer.
+
+    Parameters:
+        viewer (Viewer): The napari viewer instance.
+        target_layer (Layer | Image | Labels): The napari layer instance.
+        shapes_name (str): The name of the shapes layer.
+
+    Returns:
+        Container: The cropping widget container.
+    """
     # Determine the reference scale from the selected layer
     scale = _get_scale_from_layer(target_layer)
-    
+
     # Create one shapes layer for drawing crop boxes (XY rectangles)
     shapes_layer = viewer.add_shapes(
-        name=shapes_name, 
-        properties={
-            "z_start_um": [], 
-            "z_end_um": []
-        } if target_layer.ndim > 2 else {}
+        name=shapes_name,
+        properties={"z_start_um": [], "z_end_um": []} if target_layer.ndim > 2 else {},
     )
 
     # Build and dock cropping widget
-    widget = build_cropping_widget(
-        viewer, 
-        shapes_layer, 
-        scale
-    )
-    viewer.window.add_dock_widget(
-        widget, 
-        name="Cropping Toolbox", 
-        area="right"
-    )
+    widget = build_cropping_widget(viewer, shapes_layer, scale)
+    viewer.window.add_dock_widget(widget, name="Cropping Toolbox", area="right")
     return widget
