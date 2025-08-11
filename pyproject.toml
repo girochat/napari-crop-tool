@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[project]
+name = "napari-crop-tool"
+dynamic = ["version"]
+description = "A plugin to crop ROIs in 2D/3D images"
+authors = [
+    {name = "Giliane Rochat", 
+    email = "giliane.rochat@usz.ch"}
+]
+readme = "README.md"
+requires-python = ">=3.10, <3.13"
+dependencies = [
+    "napari",
+    "magicgui",
+    "pyqt"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-qt", "ruff", "hatch", "napari-plugin-devtools"]
+
+[project.entry-points."napari.manifest"]
+napari-crop-roi = "napari.yaml"
+
+[tool.hatch.build]
+include = ["napari_crop_tool", "napari.yaml", "README.md"]
+exclude = exclude = [
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+    "*.zarr",
+    "*.tif",
+    "*.h5",
+    "*.npz",
+    "*.npy",
+    "*.tiff",
+    "*.png",
+    "*.jpg",
+    "*.jpeg",
+    "*.mp4",
+    "*.mov",
+]
+
+# ----------------------
+# Ruff configuration
+# ----------------------
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+src = ["src"]
+
+# https://docs.astral.sh/ruff/rules
+[tool.ruff.lint]
+pydocstyle = { convention = "google" }
+select = [
+    "E",    # style errors
+    "W",    # style warnings
+    "F",    # flakes
+    "D",    # pydocstyle
+    "D417", # Missing argument descriptions in Docstrings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "C4",   # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "A001", # flake8-builtins
+    "RUF",  # ruff-specific rules
+    "TCH",  # flake8-type-checking
+    "TID",  # flake8-tidy-imports
+]
+ignore = [
+    "D401", # First line should be in imperative mood (remove to opt in)
+    "D415", # First line should end with a period (remove to opt in)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["D", "S"]
+
+# https://docs.astral.sh/ruff/formatter/
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 89
+skip-magic-trailing-comma = false  # default is false
