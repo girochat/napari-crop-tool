@@ -10,26 +10,30 @@ name = "napari-crop-tool"
 dynamic = ["version"]
 description = "A plugin to crop ROIs in 2D/3D images"
 authors = [
-    {name = "Giliane Rochat", 
-    email = "giliane.rochat@usz.ch"}
+    { name = "Giliane Rochat", email = "giliane.rochat@usz.ch"}
 ]
 readme = "README.md"
 requires-python = ">=3.10, <3.13"
 dependencies = [
     "napari",
-    "magicgui",
-    "pyqt"
+    "magicgui"
 ]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-qt", "ruff", "hatch", "napari-plugin-devtools"]
 
 [project.entry-points."napari.manifest"]
-napari-crop-roi = "napari.yaml"
+napari-crop-tool = "napari_crop_tool:napari.yaml"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/napari_crop_tool"]
 
 [tool.hatch.build]
-include = ["napari_crop_tool", "napari.yaml", "README.md"]
-exclude = exclude = [
+include = [
+    "src/napari_crop_tool/**/*.yaml",
+    "README.md"
+]
+exclude = [
     ".git",
     ".venv",
     "build",

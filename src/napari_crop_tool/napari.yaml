@@ -2,7 +2,7 @@ name: napari-crop-tool
 contributions:
   commands:
     - id: napari-crop-tool.crop_widget
-      title: OME-Zarr ROI Cropping
+      title: ROI Crop Tool
       python_name: napari_crop_tool._widget:crop_roi_widget
       command_type: widget
   widgets:
