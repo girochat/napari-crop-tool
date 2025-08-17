@@ -1,16 +1,15 @@
 from collections.abc import Sequence
 
-from magicgui import magic_factory, magicgui
-from magicgui.widgets import Container, Label
+from magicgui.widgets import Container, ComboBox, Button, Label
 from napari import Viewer
-from napari.layers import Image, Labels, Layer
+from napari.layers import Image, Labels, Layer, Shapes
 
-from ._utils import define_crop_on_layer
+from ._utils import define_crop_on_layer, build_cropping_widget, _get_scale_from_layer
 
 
-def _layer_choices(
-    viewer: Viewer
-) -> Sequence[tuple[str, Layer]]:
+def _layer_choices2(
+    widget: Container,
+) -> Sequence[dict[str, Layer]]:
     """Returns the list of currently loaded layers in the viewers.
 
     The list of (name, layer) tuples is called dynamically by magicgui to populate the
@@ -23,60 +22,113 @@ def _layer_choices(
         Sequence[tuple[str, Layer]]: The list of (name, layer) tuples.
     """
     pairs = []
-    for layer in viewer.layers:
-        if isinstance(layer, Image | Labels):
-            pairs.append((layer.name, layer))
+    if len(widget.viewer.layers) == 0:
+        pairs.append(("- - -", None))
+    else:
+        for layer in widget.viewer.layers:
+            if isinstance(layer, Image | Labels):
+                pairs.append((layer.name, layer))
     return pairs
 
-@magic_factory
-def crop_roi_widget(
-    viewer: Viewer,
-    target_layer: Layer | None = None,
-) -> Container | None:
-    """A simple launcher: pick a layer, confirm, and attach the ROI shapes + widget.
+class CropRoiWidget(Container):
+    def __init__(self, viewer: Viewer):
+        super().__init__(layout="vertical")
+        self.viewer = viewer
+        self.target_layer: Layer | None = None
+        self.shapes_layer: Shapes | None = None
+        self.cropping_ui: Container | None = None
 
-    Parameters:
-        viewer (Viewer): The napari viewer instance.
-        target_layer (Layer | None): The napari layer instance.
+        # Static top bits
+        self.header = Label(value="<b>Crop ROI Tool</b>")
+        self.status = Label(value="Select a target layer to crop.")
+        self.space = Label(value="-------------------")
 
-    Returns:
-        Container: The cropping widget container.
-    """
-    # If nothing selected in the dropdown, try the active selection
-    if target_layer is None and viewer.layers.selection.active is not None:
-        target_layer = viewer.layers.selection.active
+        # Controls
+        def _layer_choices(widget) -> Sequence[dict[str, Layer]]:
+            pairs = []
+            if len(self.viewer.layers) == 0:
+                pairs.append(("- - -", None))
+            else:
+                for layer in self.viewer.layers:
+                    if isinstance(layer, Image | Labels):
+                        pairs.append((layer.name, layer))
+            return pairs
+        self.layer_list = ComboBox(
+            name="layers",
+            label="Target layer", 
+            choices=_layer_choices)
+        
+        self.btn_confirm = Button(label="Confirm", 
+                                  enabled=(self.layer_list.value != None))
+        self.btn_reset = Button(label="Reset", enabled=False)
 
-    if target_layer is None:
-        # You can also show a message box, but this keeps it quiet in console
-        print("No eligible layer selected. Please choose an Image or Labels layer.")
-        return Container(
-            widgets=[Label(value="Select an Image or Labels layer to use this tool.")])
+        self.body = Container(widgets = [self.layer_list, 
+                                         self.btn_confirm, 
+                                         self.btn_reset, 
+                                         self.space], 
+                              layout="vertical")
 
-    # Attach cropping toolbox to the chosen layer
-    return define_crop_on_layer(viewer=viewer, target_layer=target_layer)
+        self.btn_confirm.changed.connect(self._on_confirm)
+        self.btn_reset.changed.connect(self._on_reset)
 
-# Optional: add a tiny helper to refresh the dropdown without closing the widget
-@magicgui(call_button="Refresh layer list")
-def refresh_layers(
-    viewer: Viewer
-) -> None:
-    """Refresh the list of available layers in the dropdown.
+        # Keep layer choices in sync with the viewer
+        self.viewer.layers.events.inserted.connect(self._refresh_layer_choices)
+        self.viewer.layers.events.removed.connect(self._refresh_layer_choices)
+        self.viewer.layers.events.moved.connect(self._refresh_layer_choices)
+        self.viewer.layers.events.reordered.connect(self._refresh_layer_choices)
+        self.viewer.layers.events.changed.connect(self._refresh_layer_choices)
 
-    This is a helper function that can be called from the widget to update the list
-    of available layers in the dropdown.
+        # Assemble widgets
+        self.extend([self.header, self.status, self.body])
 
-    Parameters:
-        viewer (Viewer): The napari viewer instance.
+    def _enter_selection(self):
+        
+        # Clean up shapes & embedded UI if returning from cropping
+        self._remove_shapes_if_any()
+        self.body.remove(self.cropping_ui)
+        self.target_layer = None
+        self.btn_reset.enabled = False
+        self.btn_confirm.enabled = (self.layer_list.value != None)
 
-    Returns:
-        None
-    """
-    # magicgui re-evaluates choices on dropdown focus; this call nudges UI redraw
-    pass
+    def _enter_cropping(self):
+        assert self.target_layer is not None
 
-#def create_dock_widget(viewer: Viewer):
-#    """If you prefer a single dock with both 'picker' and 'refresh' buttons,
-#    you can add both widgets together in code when registering.
-#    """
-#    # In napari.yaml, you can point to this factory too, if desired.
-#    return (crop_roi_widget, refresh_layers)
+        # Make shapes tailored to target dimensionality
+        scale = _get_scale_from_layer(self.target_layer)
+        props = {"z_start_um": [], "z_end_um": []} if self.target_layer.ndim > 2 else {}
+        self.shapes_layer = self.viewer.add_shapes(name="Cropping Box", 
+                                                   properties=props)
+        self.btn_confirm.enabled = False
+
+        # Your existing builder returns a magicgui Container
+        self.cropping_ui = build_cropping_widget(self.viewer, self.shapes_layer, scale)
+        self.body.append(self.cropping_ui)
+
+    # ---------- Event handlers ----------
+    def _on_confirm(self, _=None):
+        selected = self.layer_list.value
+
+        # If no layer selected, do nothing
+        if selected is None:
+            return
+        
+        self.target_layer = selected
+        self.status.value = "Target layer selected! Press 'Reset' to change layer."
+        self.btn_confirm.enabled = False
+        self.btn_reset.enabled = True
+        self._enter_cropping()
+
+    def _on_reset(self, _=None):
+        self.status.value = "Select a target layer to crop."
+        self.btn_confirm.enabled = True
+        self.btn_reset.enabled = False
+        self._enter_selection()
+
+    def _refresh_layer_choices(self, _=None):
+        self.layer_list.reset_choices()
+        self.btn_confirm.enabled = (self.layer_list.value != None)
+
+    def _remove_shapes_if_any(self):
+        if self.shapes_layer is not None and self.shapes_layer in self.viewer.layers:
+            self.viewer.layers.remove(self.shapes_layer)
+        self.shapes_layer = None

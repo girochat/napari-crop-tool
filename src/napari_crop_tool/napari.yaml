@@ -3,7 +3,7 @@ contributions:
   commands:
     - id: napari-crop-tool.crop_widget
       title: ROI Crop Tool
-      python_name: napari_crop_tool._widget:crop_roi_widget
+      python_name: napari_crop_tool._widget:CropRoiWidget
   widgets:
     - command: napari-crop-tool.crop_widget
       display_name: ROI Crop Tool
