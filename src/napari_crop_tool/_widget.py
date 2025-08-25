@@ -3,32 +3,10 @@ from collections.abc import Sequence
 from magicgui.widgets import Container, ComboBox, Button, Label
 from napari import Viewer
 from napari.layers import Image, Labels, Layer, Shapes
+from pathlib import Path
 
-from ._utils import define_crop_on_layer, build_cropping_widget, _get_scale_from_layer
+from ._utils import build_cropping_widget, _get_scale_from_layer
 
-
-def _layer_choices2(
-    widget: Container,
-) -> Sequence[dict[str, Layer]]:
-    """Returns the list of currently loaded layers in the viewers.
-
-    The list of (name, layer) tuples is called dynamically by magicgui to populate the
-    list of choices.
-
-    Parameters:
-        viewer (Viewer): The napari viewer instance.
-
-    Returns:
-        Sequence[tuple[str, Layer]]: The list of (name, layer) tuples.
-    """
-    pairs = []
-    if len(widget.viewer.layers) == 0:
-        pairs.append(("- - -", None))
-    else:
-        for layer in widget.viewer.layers:
-            if isinstance(layer, Image | Labels):
-                pairs.append((layer.name, layer))
-    return pairs
 
 class CropRoiWidget(Container):
     def __init__(self, viewer: Viewer):
@@ -100,8 +78,11 @@ class CropRoiWidget(Container):
                                                    properties=props)
         self.btn_confirm.enabled = False
 
-        # Your existing builder returns a magicgui Container
-        self.cropping_ui = build_cropping_widget(self.viewer, self.shapes_layer, scale)
+        # Get default output directory
+        out_dir = Path(self.target_layer.source.path).parent
+
+        # Get magicgui container for cropping widget
+        self.cropping_ui = build_cropping_widget(self.viewer, self.shapes_layer, scale, out_dir)
         self.body.append(self.cropping_ui)
 
     # ---------- Event handlers ----------

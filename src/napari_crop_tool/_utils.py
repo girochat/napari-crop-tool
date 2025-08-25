@@ -1,11 +1,16 @@
 import numpy as np
-from magicgui.widgets import Container, Label, PushButton
+import pandas as pd
+from pathlib import Path
+from magicgui.widgets import Container, Label, PushButton, FileEdit, LineEdit
 from napari import Viewer
 from napari.layers import Image, Labels, Layer, Shapes
 
 
 def build_cropping_widget(
-    viewer: Viewer, shapes_layer: Shapes, scale: tuple
+    viewer: Viewer, 
+    shapes_layer: Shapes, 
+    scale: tuple,
+    out_dir: str
 ) -> Container:
     """Build a cropping widget.
 
@@ -16,6 +21,7 @@ def build_cropping_widget(
         viewer (Viewer): The napari viewer instance.
         shapes_layer (Shapes): The napari shapes layer instance.
         scale (tuple): The scale of the image.
+        out_dir (str): The default output directory for saving the cropped coordinates.
 
     Returns:
         Container: The cropping widget container.
@@ -30,14 +36,18 @@ def build_cropping_widget(
 
     # UI elements
     get_slice_btn = PushButton(label="Get Z Slice Range")
-    slice_label = Label(value="Current Z slice range:")
+    slice_label = Label(value="Current Z Slice range:")
     start_label = Label(value="Z start:")
     stop_label = Label(value="Z end:")
     set_start_btn = PushButton(label="Set Z Start from Cursor")
     set_stop_btn = PushButton(label="Set Z End from Cursor")
     confirm_btn = PushButton(label="Confirm", visible=False)
     reset_btn = PushButton(label="Reset", visible=False)
-    save_btn = PushButton(label="Save Crop Coordinates (All)")
+    tag_edit = LineEdit(value="", label="ROI Tag (e.g. DEJ, muscle...)")
+    file_edit = FileEdit(mode="w", value=Path(out_dir, "roi_coords.csv"))
+    tag_edit.min_width = 100
+    file_edit.min_width = 100
+    save_btn = PushButton(label="Save to Output File")
     message_label = Label(value="")
 
     # Get current slice range when get button is clicked
@@ -155,15 +165,18 @@ def build_cropping_widget(
     set_stop_btn.clicked.connect(on_set_stop)
     confirm_btn.clicked.connect(on_confirm)
     reset_btn.clicked.connect(reset_slice)
+    get_slice_btn.changed.connect(on_get_slice_clicked)
 
     # Save the currently selected shape and slice range on save button click
     def on_save():
         if len(shapes_layer.data) == 0:
             print("No cropping box drawn!")
             return
-
+        
+        roi_df = pd.DataFrame(columns=["x_start_um", "y_start_um", "x_end_um",
+                                           "y_end_um", "z_start_um", "z_end_um"])
         for shape_idx in range(len(shapes_layer.data)):
-            # shape_idx = list(selected)[0]
+
             roi = shapes_layer.data[shape_idx]
             if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
                 z_start = min_z
@@ -178,12 +191,21 @@ def build_cropping_widget(
                 "y_start_um": min(roi[:, 0]),
                 "x_end_um": max(roi[:, 1]),
                 "y_end_um": max(roi[:, 0]),
-                "z_start_um": z_start,
-                "z_end_um": z_end,
+                "z_start_um": min(z_start, z_end),
+                "z_end_um": max(z_start, z_end),
             }
+            roi_df.loc[shape_idx] = roi_data
 
-            # Save/update in session memory
-            saved_state["rois"][shape_idx] = roi_data
+        tag = tag_edit.value
+        if tag == "":
+            tag = "roi_"
+        else:
+            tag = f"{tag}_roi_"
+        roi_df.index = [f"{tag}{i:02}" for i in range(len(roi_df))]
+        out_filepath = Path(file_edit.value)
+        out_filepath.parent.mkdir(parents=True, exist_ok=True)
+        roi_df.to_csv(out_filepath, index=True)
+        message_label.value = f"Saved ROI coordinates to {out_filepath.name}"
 
     save_btn.clicked.connect(on_save)
 
@@ -205,8 +227,11 @@ def build_cropping_widget(
                         ],
                         layout="vertical",
                     ),
+                    tag_edit,
+                    file_edit,
                     save_btn,
-                ]
+                ],
+                layout="vertical",
             ),
             message_label,
         ],
