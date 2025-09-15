@@ -1,11 +1,20 @@
 from collections.abc import Sequence
+from typing import Any
 
 from magicgui.widgets import Container, ComboBox, Button, Label
 from napari import Viewer
 from napari.layers import Image, Labels, Layer, Shapes
 from pathlib import Path
 
-from ._utils import build_cropping_widget, _get_scale_from_layer
+from ._utils import build_cropping_widget, _get_scale_from_layer, _layer_choices
+
+class LayerChoiceWidget(ComboBox):
+    def __init__(self, 
+                 viewer: Viewer, 
+                 choices: Sequence[dict[str, Layer]] = None,
+                 **base_widget_kwargs: dict[str, Any]):
+        self.viewer = viewer
+        super().__init__(choices=choices, **base_widget_kwargs)
 
 
 class CropRoiWidget(Container):
@@ -16,22 +25,14 @@ class CropRoiWidget(Container):
         self.shapes_layer: Shapes | None = None
         self.cropping_ui: Container | None = None
 
-        # Static top bits
+        # Static UIs
         self.header = Label(value="<b>Crop ROI Tool</b>")
         self.status = Label(value="Select a target layer to crop.")
         self.space = Label(value="-------------------")
 
-        # Controls
-        def _layer_choices(widget) -> Sequence[dict[str, Layer]]:
-            pairs = []
-            if len(self.viewer.layers) == 0:
-                pairs.append(("- - -", None))
-            else:
-                for layer in self.viewer.layers:
-                    if isinstance(layer, Image | Labels):
-                        pairs.append((layer.name, layer))
-            return pairs
-        self.layer_list = ComboBox(
+        # Control UIs
+        self.layer_list = LayerChoiceWidget(
+            viewer=self.viewer,
             name="layers",
             label="Target layer", 
             choices=_layer_choices)
@@ -59,9 +60,10 @@ class CropRoiWidget(Container):
         # Assemble widgets
         self.extend([self.header, self.status, self.body])
 
-    def _enter_selection(self):
+    # ----------- switching UI methods ----------
+    def _enter_layer_selection(self):
         
-        # Clean up shapes & embedded UI if returning from cropping
+        # Clean up shapes & embedded UI
         self._remove_shapes_if_any()
         self.body.remove(self.cropping_ui)
         self.target_layer = None
@@ -82,10 +84,20 @@ class CropRoiWidget(Container):
         out_dir = Path(self.target_layer.source.path).parent
 
         # Get magicgui container for cropping widget
-        self.cropping_ui = build_cropping_widget(self.viewer, self.shapes_layer, scale, out_dir)
-        self.body.append(self.cropping_ui)
+        self.cropping_ui = build_cropping_widget(self.viewer, 
+                                                 self.shapes_layer, 
+                                                 scale, 
+                                                 out_dir)
+        
+        dock = self.viewer.window.add_dock_widget(self.cropping_ui, 
+                                                  name="Cropping Toolbox")
+        dock.setFloating(True)   # immediately pop it out
+        dock.raise_()
 
-    # ---------- Event handlers ----------
+        #self.cropping_ui.show()
+        #self.body.append(self.cropping_ui)
+
+    # ---------- button handler methods ----------
     def _on_confirm(self, _=None):
         selected = self.layer_list.value
 
@@ -103,13 +115,14 @@ class CropRoiWidget(Container):
         self.status.value = "Select a target layer to crop."
         self.btn_confirm.enabled = True
         self.btn_reset.enabled = False
-        self._enter_selection()
+        self._enter_layer_selection()
 
-    def _refresh_layer_choices(self, _=None):
-        self.layer_list.reset_choices()
-        self.btn_confirm.enabled = (self.layer_list.value != None)
-
+    # ---------- helper methods ----------
     def _remove_shapes_if_any(self):
         if self.shapes_layer is not None and self.shapes_layer in self.viewer.layers:
             self.viewer.layers.remove(self.shapes_layer)
         self.shapes_layer = None
+
+    def _refresh_layer_choices(self, _=None):
+        self.layer_list.reset_choices()
+        self.btn_confirm.enabled = (self.layer_list.value != None)

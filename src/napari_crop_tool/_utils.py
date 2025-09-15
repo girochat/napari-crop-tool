@@ -4,7 +4,17 @@ from pathlib import Path
 from magicgui.widgets import Container, Label, PushButton, FileEdit, LineEdit
 from napari import Viewer
 from napari.layers import Image, Labels, Layer, Shapes
+from collections.abc import Sequence
 
+def _layer_choices(widget) -> Sequence[dict[str, Layer]]:
+    pairs = []
+    if len(widget.viewer.layers) == 0:
+        pairs.append(("- - -", None))
+    else:
+        for layer in widget.viewer.layers:
+            if isinstance(layer, Image | Labels):
+                pairs.append((layer.name, layer))
+    return pairs
 
 def build_cropping_widget(
     viewer: Viewer, 
@@ -284,8 +294,6 @@ def define_crop_on_layer(
     """
     # Determine the reference scale from the selected layer
     scale = _get_scale_from_layer(target_layer)
-    print(scale)
-    print(target_layer.ndim)
 
     # Create one shapes layer for drawing crop boxes (XY rectangles)
     shapes_layer = viewer.add_shapes(
