@@ -36,57 +36,71 @@ def build_cropping_widget(
     Returns:
         Container: The cropping widget container.
     """
-    # State to store current slicing axis and shape range records
-    saved_state = {
-        "rois": {},
-    }
+    shapes_layer.text = {
+        "string": "{id}", 
+        "size": 12,
+        "color": "white",
+        "anchor": "upper_left",
+        "translation": [0, 0],
+        }
+
     min_z_um, max_z_um, _ = viewer.dims.range[-3]
     min_z = round(min_z_um / scale[0])
     max_z = round(max_z_um / scale[0])
 
     # UI elements
-    get_slice_btn = PushButton(label="Get Z Slice Range")
-    slice_label = Label(value="Current Z Slice range:")
-    start_label = Label(value="Z start:")
-    stop_label = Label(value="Z end:")
+    rois_gui = Container()
+    roi_title = Label(value="<b>ROI Cropping</b>")
     set_start_btn = PushButton(label="Set Z Start from Cursor")
     set_stop_btn = PushButton(label="Set Z End from Cursor")
-    confirm_btn = PushButton(label="Confirm", visible=False)
-    reset_btn = PushButton(label="Reset", visible=False)
-    tag_edit = LineEdit(value="", label="ROI Tag (e.g. DEJ, muscle...)")
+    space_label = Label(value="---------------------")
+    save_title = Label(value="<b>Saving</b>")
     file_edit = FileEdit(mode="w", value=Path(out_dir, "roi_coords.csv"))
-    tag_edit.min_width = 100
     file_edit.min_width = 100
-    save_btn = PushButton(label="Save to Output File")
+    #save_coords_btn = PushButton(label="Save ROI coordinates (CSV)")
+    #save_image_btn = PushButton(label="Save ROI cropped image(s) (PNG, TIFF, JPEG...)")
+    tag_edit = LineEdit(value="", label="ROI Tag (e.g. DEJ, muscle...) (optional)")
+    tag_edit.min_width = 100
+    save_btn = PushButton(label="Save")
     message_label = Label(value="")
 
-    # Get current slice range when get button is clicked
-    def on_get_slice_clicked():
-        message_label.value = ""
-        if len(shapes_layer.data) == 0:
-            message_label.value = "No cropping box drawn!"
-            return
-        selected_rois = shapes_layer.selected_data
-        if len(selected_rois) == 0:
-            message_label.value = "No cropping box selected!"
-            return
-        if len(selected_rois) > 1:
-            message_label.value = "Please select only one cropping box!"
-            return
-        shape_idx = next(iter(selected_rois))
-        get_slice_btn.shape_idx = shape_idx
-        if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
-            shapes_layer.properties["z_start_um"][shape_idx] = min_z_um
-            shapes_layer.properties["z_end_um"][shape_idx] = max_z_um
-        start_label.value =(
-            f"Z start: "
-            f"{int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
-        )
-        stop_label.value = (
-            f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
-        )
+    def update_roi_gui():
+        n = len(shapes_layer.data)
+        if n > 0:
+            props = dict(shapes_layer.properties)
+            ids = []
+            z_starts = []
+            z_ends = []
+            for shape_idx in range(len(shapes_layer.data)):
+                ids.append(str(shape_idx))
+                if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
+                    z_starts.append(min_z)
+                else:
+                    z_starts.append(shapes_layer.properties["z_start_um"][shape_idx])
+                if np.isnan(shapes_layer.properties["z_end_um"][shape_idx]):
+                    z_ends.append(max_z)
+                else:
+                    z_ends.append(shapes_layer.properties["z_end_um"][shape_idx])
+                if len(rois_gui) > shape_idx:
+                    rois_gui[shape_idx].value=(f"<b>ROI {shape_idx:02}</b>:"
+                                               f"Z start={int(z_starts[shape_idx])},"
+                                               f" Z end={int(z_ends[shape_idx])}")
+                else:
+                    rois_gui.append(
+                    Label(value=(f"<b>ROI {shape_idx:02}</b>:"
+                                 f" Z start={int(z_starts[shape_idx])}, "
+                                 f"Z end={int(z_ends[shape_idx])}")))
 
-    get_slice_btn.changed.connect(on_get_slice_clicked)
+            props["id"] = np.array(ids, dtype=str)
+            props["z_start_um"] = np.array(z_starts, dtype=float)
+            props["z_end_um"] = np.array(z_ends, dtype=float)
+            shapes_layer.properties = props
+
+    # Run once at startup
+    update_roi_gui()
+
+    # Update whenever shapes data changes
+    shapes_layer.events.data.connect(update_roi_gui)   
 
     # Assign slice start/stop from current slider
     def on_set_start():
@@ -95,22 +109,18 @@ def build_cropping_widget(
         selected_rois = shapes_layer.selected_data
         if len(selected_rois) == 0:
             message_label.value = "\nNo cropping box selected!"
-            restart_slice()
             return
         if len(selected_rois) > 1:
             message_label.value = "\nPlease select only one cropping box!"
-            restart_slice()
             return
-        shape_idx = get_slice_btn.shape_idx
+        shape_idx = next(iter(selected_rois))
         shapes_layer.properties["z_start_um"][shape_idx] = value * scale[0]
-        start_label.value = (
-            f"Z start: "
-            f"{int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
-        )
-        set_start_btn.enabled = False
-        if not (set_start_btn.enabled) and not (set_stop_btn.enabled):
-            reset_btn.visible = True
-            confirm_btn.visible = True
+        new_min_z = int(value)
+        current_max_z = int(shapes_layer.properties['z_end_um'][shape_idx])
+        rois_gui[shape_idx].value=(f"<b>ROI {shape_idx:02}</b>: Z start={new_min_z},"
+                                   f" Z end={current_max_z}")
+        
+    set_start_btn.clicked.connect(on_set_start)
 
     def on_set_stop():
         message_label.value = ""
@@ -118,104 +128,67 @@ def build_cropping_widget(
         selected_rois = shapes_layer.selected_data
         if len(selected_rois) == 0:
             message_label.value = "\nNo cropping box selected!"
-            restart_slice()
             return
         if len(selected_rois) > 1:
             message_label.value = "\nPlease select only one cropping box!"
-            restart_slice()
             return
-        shape_idx = get_slice_btn.shape_idx
+        shape_idx = next(iter(selected_rois))
         shapes_layer.properties["z_end_um"][shape_idx] = value * scale[0]
-        stop_label.value = (
-            f"Z end: {int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
-        )
-        set_stop_btn.enabled = False
-        if not (set_start_btn.enabled) and not (set_stop_btn.enabled):
-            confirm_btn.visible = True
-            reset_btn.visible = True
+        new_max_z = int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])
+        current_min_z = int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])
+        rois_gui[shape_idx].value=(f"<b>ROI {shape_idx:02}</b>:"
+                                   f" Z start={current_min_z}, Z end={new_max_z}")
 
-    def restart_slice():
-        start_label.value = "Z start:"
-        stop_label.value = "Z end:"
-        set_stop_btn.enabled = True
-        set_start_btn.enabled = True
-        get_slice_btn.shape_idx = None
-        confirm_btn.visible = False
-        reset_btn.visible = False
-
-    # Confirm the current slice range on confirm button click
-    def on_confirm():
-        message_label.value = ""
-        selected_rois = shapes_layer.selected_data
-        if len(selected_rois) == 0:
-            message_label.value = "\nNo cropping box selected!"
-            restart_slice()
-            return
-        if len(selected_rois) > 1:
-            message_label.value = "\nPlease select only one cropping box!"
-            restart_slice()
-            return
-        restart_slice()
-
-    # Re-enable the start/stop buttons to reset the slice range
-    def reset_slice():
-        shape_idx = get_slice_btn.shape_idx
-        start_label.value = (
-            f"Z start: "
-            f"{int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])}"
-        )
-        stop_label.value = (
-            f"Z end: "
-            f"{int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])}"
-        )
-        set_start_btn.enabled = True
-        set_stop_btn.enabled = True
-
-    set_start_btn.clicked.connect(on_set_start)
     set_stop_btn.clicked.connect(on_set_stop)
-    confirm_btn.clicked.connect(on_confirm)
-    reset_btn.clicked.connect(reset_slice)
-    get_slice_btn.changed.connect(on_get_slice_clicked)
 
     # Save the currently selected shape and slice range on save button click
     def on_save():
         if len(shapes_layer.data) == 0:
-            print("No cropping box drawn!")
+            message_label.value = "\nNo cropping box drawn!"
             return
         
-        roi_df = pd.DataFrame(columns=["x_start_um", "y_start_um", "x_end_um",
-                                           "y_end_um", "z_start_um", "z_end_um"])
-        for shape_idx in range(len(shapes_layer.data)):
+        file_ext = Path(file_edit.value).suffix
+        if file_ext == ".csv":
+            roi_df = pd.DataFrame(columns=["x_start_um", "y_start_um", "x_end_um",
+                                            "y_end_um", "z_start_um", "z_end_um"])
+            
+            for shape_idx in range(len(shapes_layer.data)):
+                roi = shapes_layer.data[shape_idx]
+                if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
+                    z_start = min_z
+                else:
+                    z_start = shapes_layer.properties["z_start_um"][shape_idx]
+                if np.isnan(shapes_layer.properties["z_end_um"][shape_idx]):
+                    z_end = max_z
+                else:
+                    z_end = shapes_layer.properties["z_end_um"][shape_idx]
+                roi_data = {
+                    "x_start_um": min(roi[:, 1]),
+                    "y_start_um": min(roi[:, 0]),
+                    "x_end_um": max(roi[:, 1]),
+                    "y_end_um": max(roi[:, 0]),
+                    "z_start_um": min(z_start, z_end),
+                    "z_end_um": max(z_start, z_end),
+                }
+                roi_df.loc[shape_idx] = roi_data
 
-            roi = shapes_layer.data[shape_idx]
-            if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
-                z_start = min_z
+            tag = tag_edit.value
+            if tag == "":
+                tag = "roi_"
             else:
-                z_start = shapes_layer.properties["z_start_um"][shape_idx]
-            if np.isnan(shapes_layer.properties["z_end_um"][shape_idx]):
-                z_end = max_z
-            else:
-                z_end = shapes_layer.properties["z_end_um"][shape_idx]
-            roi_data = {
-                "x_start_um": min(roi[:, 1]),
-                "y_start_um": min(roi[:, 0]),
-                "x_end_um": max(roi[:, 1]),
-                "y_end_um": max(roi[:, 0]),
-                "z_start_um": min(z_start, z_end),
-                "z_end_um": max(z_start, z_end),
-            }
-            roi_df.loc[shape_idx] = roi_data
+                tag = f"{tag}_roi_"
+            roi_df.index = [f"{tag}{i:02}" for i in range(len(roi_df))]
+            out_filepath = Path(file_edit.value)
+            out_filepath.parent.mkdir(parents=True, exist_ok=True)
+            roi_df.to_csv(out_filepath, index=True)
+            message_label.value = f"Saved ROI coordinates to {out_filepath.name}"
 
-        tag = tag_edit.value
-        if tag == "":
-            tag = "roi_"
-        else:
-            tag = f"{tag}_roi_"
-        roi_df.index = [f"{tag}{i:02}" for i in range(len(roi_df))]
-        out_filepath = Path(file_edit.value)
-        out_filepath.parent.mkdir(parents=True, exist_ok=True)
-        roi_df.to_csv(out_filepath, index=True)
-        message_label.value = f"Saved ROI coordinates to {out_filepath.name}"
+        if file_ext == ".png" or file_ext == ".jpg" or file_ext == ".jpeg":
+            # TODO: implement
+            pass
+        if file_ext == ".tif" or file_ext == ".tiff":
+            # TODO: implement
+            pass
 
     save_btn.clicked.connect(on_save)
 
@@ -224,31 +197,28 @@ def build_cropping_widget(
         widgets=[
             Container(
                 widgets=[
-                    get_slice_btn,
+                    roi_title,
+                    rois_gui,
                     Container(
                         widgets=[
-                            slice_label,
-                            start_label,
-                            stop_label,
                             set_start_btn,
                             set_stop_btn,
-                            confirm_btn,
-                            reset_btn,
                         ],
-                        layout="vertical",
+                        layout="horizontal",
                     ),
+                    message_label,
+                    space_label,
+                    save_title,
                     tag_edit,
                     file_edit,
                     save_btn,
                 ],
                 layout="vertical",
             ),
-            message_label,
         ],
         layout="vertical",
         labels=True,
     )
-    crop_widget.rois = saved_state["rois"]
 
     return crop_widget
 
