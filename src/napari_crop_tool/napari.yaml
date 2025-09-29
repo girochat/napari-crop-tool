@@ -1,9 +1,10 @@
 name: napari-crop-tool
+display_name: Crop Tool
 contributions:
   commands:
     - id: napari-crop-tool.crop_widget
-      title: ROI Crop Tool
-      python_name: napari_crop_tool._widget:CropRoiWidget
+      title: Crop Tool
+      python_name: napari_crop_tool._widget:CropToolWidget
   widgets:
     - command: napari-crop-tool.crop_widget
-      display_name: ROI Crop Tool
+      display_name: Crop Tool
