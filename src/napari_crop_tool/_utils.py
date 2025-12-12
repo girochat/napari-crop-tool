@@ -36,6 +36,7 @@ def build_cropping_widget(
     Returns:
         Container: The cropping widget container.
     """
+    saved_n = 0
     shapes_layer.text = {
         "string": "{id}", 
         "size": 12,
@@ -66,21 +67,26 @@ def build_cropping_widget(
 
     def update_roi_gui():
         n = len(shapes_layer.data)
-        if n > 0:
+        n_saved_rois = len(rois_gui)
+        if n == n_saved_rois:
+            pass
+        else:
             props = dict(shapes_layer.properties)
             ids = []
             z_starts = []
             z_ends = []
             for shape_idx in range(len(shapes_layer.data)):
                 ids.append(str(shape_idx))
+                print(shapes_layer.properties)
                 if np.isnan(shapes_layer.properties["z_start_um"][shape_idx]):
                     z_starts.append(min_z)
                 else:
-                    z_starts.append(shapes_layer.properties["z_start_um"][shape_idx])
+                    z_starts.append(int(shapes_layer.properties["z_start_um"][shape_idx] / scale[0]))
+
                 if np.isnan(shapes_layer.properties["z_end_um"][shape_idx]):
                     z_ends.append(max_z)
                 else:
-                    z_ends.append(shapes_layer.properties["z_end_um"][shape_idx])
+                    z_ends.append(int(shapes_layer.properties["z_end_um"][shape_idx] / scale[0]))
                 if len(rois_gui) > shape_idx:
                     rois_gui[shape_idx].value=(f"<b>ROI {shape_idx:02}</b>:"
                                                f"Z start={int(z_starts[shape_idx])},"
@@ -92,8 +98,8 @@ def build_cropping_widget(
                                  f"Z end={int(z_ends[shape_idx])}")))
 
             props["id"] = np.array(ids, dtype=str)
-            props["z_start_um"] = np.array(z_starts, dtype=float)
-            props["z_end_um"] = np.array(z_ends, dtype=float)
+            props["z_start_um"] = np.array(z_starts, dtype=float) * scale[0]
+            props["z_end_um"] = np.array(z_ends, dtype=float) * scale[0]
             shapes_layer.properties = props
 
     # Run once at startup
@@ -116,7 +122,7 @@ def build_cropping_widget(
         shape_idx = next(iter(selected_rois))
         shapes_layer.properties["z_start_um"][shape_idx] = value * scale[0]
         new_min_z = int(value)
-        current_max_z = int(shapes_layer.properties['z_end_um'][shape_idx])
+        current_max_z = int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])
         rois_gui[shape_idx].value=(f"<b>ROI {shape_idx:02}</b>: Z start={new_min_z},"
                                    f" Z end={current_max_z}")
         
@@ -134,7 +140,7 @@ def build_cropping_widget(
             return
         shape_idx = next(iter(selected_rois))
         shapes_layer.properties["z_end_um"][shape_idx] = value * scale[0]
-        new_max_z = int(shapes_layer.properties['z_end_um'][shape_idx] / scale[0])
+        new_max_z = int(value)
         current_min_z = int(shapes_layer.properties['z_start_um'][shape_idx] / scale[0])
         rois_gui[shape_idx].value=(f"<b>ROI {shape_idx:02}</b>:"
                                    f" Z start={current_min_z}, Z end={new_max_z}")
