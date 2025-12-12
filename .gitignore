@@ -1,1 +1,4 @@
 src/napari_crop_tool/__pycache__
+__pycache__/
+*.py[cod]
+*$py.class

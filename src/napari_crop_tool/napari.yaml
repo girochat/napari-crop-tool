@@ -4,7 +4,7 @@ contributions:
   commands:
     - id: napari-crop-tool.crop_widget
       title: Crop Tool
-      python_name: napari_crop_tool._widget:CropToolWidget
+      python_name: napari_crop_tool.widget:MainGUI
   widgets:
     - command: napari-crop-tool.crop_widget
       display_name: Crop Tool
