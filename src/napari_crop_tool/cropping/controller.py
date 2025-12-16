@@ -49,8 +49,8 @@ class CroppingController:
         for i in range(n):
             self.gui.rois_gui[i].value = (
                 f"<b>ROI {i:02}</b>: "
-                f"Z start={self.model.get_z_start(i)}, "
-                f"Z end={self.model.get_z_end(i)}"
+                f"Z start={self.model.get_z_start_px(i)}, "
+                f"Z end={self.model.get_z_end_px(i)}"
             )
 
     def on_set_start(self):
@@ -60,7 +60,7 @@ class CroppingController:
             return
 
         z = self.model.viewer.dims.current_step[-3]
-        self.model.set_z_start(idx, z)
+        self.model.set_z_start_um(idx, z)
         self.update_rois()
 
     def on_set_stop(self):
@@ -70,7 +70,7 @@ class CroppingController:
             return
 
         z = self.model.viewer.dims.current_step[-3]
-        self.model.set_z_end(idx, z)
+        self.model.set_z_end_um(idx, z)
         self.update_rois()
 
     def on_clear_rois(self):
