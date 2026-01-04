@@ -80,15 +80,19 @@ class LayerSelectionController():
 
         # Create shapes layer tailored to dimensionality
         props = (
-            {"z_start_um": [], "z_end_um": [], "id": np.array([], dtype=str)}
+            {"track_axis": np.array([], dtype=int),
+            "start_um": np.array([], dtype=float), 
+            "end_um": np.array([], dtype=float), 
+            "id": np.array([], dtype=str)}
             if layer.ndim > 2
             else {"id": np.array([], dtype=str)}
         )
         self.model.shapes_layer = self.model.viewer.add_shapes(
+            ndim=layer.ndim,
             name="Cropping Box",
             properties=props,
         )
-
+    
         scale = _get_scale_from_layer(layer)
         out_dir = Path(layer.source.path).parent
 

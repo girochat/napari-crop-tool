@@ -9,8 +9,8 @@ class CroppingGUI():
         self.rois_gui = Container()
 
         self.roi_title = Label(value="<b>ROI Cropping</b>")
-        self.set_start_btn = PushButton(label="Set Z Start from Cursor")
-        self.set_stop_btn = PushButton(label="Set Z End from Cursor")
+        self.set_start_btn = PushButton(label="Set Slice Start from Cursor")
+        self.set_stop_btn = PushButton(label="Set Slice End from Cursor")
         self.clear_rois_btn = PushButton(label="Clear ROI list")
 
         self.separator = Label(value="---------------------------")
@@ -46,7 +46,4 @@ class CroppingGUI():
             ],
             layout="vertical",
         )
-
-    def set_message(self, text: str):
-        self.message_label.value = text
 
