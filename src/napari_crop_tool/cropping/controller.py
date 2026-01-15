@@ -52,8 +52,8 @@ class CroppingController:
             scroll_axis = self.model.viewer.dims.order[0]
             for i in range(1, n_new_rois+1):
                 self.model.shapes_layer.properties["track_axis"][-i] = scroll_axis
-                self.model.shapes_layer.properties["end_um"][-i] = self.model.max_px[scroll_axis]
-                self.model.shapes_layer.properties["start_um"][-i] = self.model.min_px[scroll_axis]
+                self.model.shapes_layer.properties["end_um"][-i] = self.model.max_um[scroll_axis]
+                self.model.shapes_layer.properties["start_um"][-i] = self.model.min_um[scroll_axis]
 
         # Ensure we have enough labels
         while len(self.gui.rois_gui) < n:
