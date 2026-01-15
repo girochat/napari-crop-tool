@@ -26,12 +26,12 @@ class CroppingModel:
         }
 
         # Compute default range (in px index units)
-        min_um = np.array([self.viewer.dims.range[i][0] 
+        self.min_um = np.array([self.viewer.dims.range[i][0] 
                            for i in range(self.shapes_layer.ndim)])
-        max_um = np.array([self.viewer.dims.range[i][1] 
+        self.max_um = np.array([self.viewer.dims.range[i][1] 
                            for i in range(self.shapes_layer.ndim)])
-        self.min_px = np.round(min_um / np.array(self.scale)).astype(int)
-        self.max_px = np.round(max_um / np.array(self.scale)).astype(int)
+        self.min_px = np.round(self.min_um / np.array(self.scale)).astype(int)
+        self.max_px = np.round(self.max_um / np.array(self.scale)).astype(int)
 
     # ---- ROI helpers ----
     def num_rois(self) -> int:
@@ -61,11 +61,11 @@ class CroppingModel:
 
     def set_scroll_start_um(self, idx: int, curr_index: int):
         curr_axis = self.get_track_axis(idx)
-        self.shapes_layer.properties["start_um"][idx] = curr_index * self.scale[curr_axis]
+        self.shapes_layer.properties["start_um"][idx] = curr_index
 
     def set_scroll_end_um(self, idx: int, curr_index: int):
         curr_axis = self.get_track_axis(idx)
-        self.shapes_layer.properties["end_um"][idx] = curr_index * self.scale[curr_axis]
+        self.shapes_layer.properties["end_um"][idx] = curr_index
 
     def clear_rois(self):
         self.shapes_layer.data = []
