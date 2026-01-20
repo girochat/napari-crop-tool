@@ -69,6 +69,7 @@ class CroppingModel:
 
     def clear_rois(self):
         self.shapes_layer.data = []
+        self.shapes_layer.selected_data = set()
         self.shapes_layer.properties = {
             "id": np.array([], dtype=str),
             "start_um": np.array([], dtype=float),
