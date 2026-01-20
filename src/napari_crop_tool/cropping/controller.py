@@ -21,9 +21,11 @@ class CroppingController:
     ):
         self.model = model
         self.gui = gui
+        self.last_selected = set()
 
         # Wire napari + gui events
         self.model.shapes_layer.events.data.connect(self.update_rois)
+        self.model.shapes_layer.events.data.connect(self._keep_last_selected)
         self.model.viewer.dims.events.point.connect(self._project_shapes)
         self.gui.set_start_btn.clicked.connect(self.on_set_start)
         self.gui.set_stop_btn.clicked.connect(self.on_set_stop)
@@ -43,6 +45,11 @@ class CroppingController:
                 slice_idx = self.model.viewer.dims.current_step[curr_axis]
                 curr_shapes_data[i][:,curr_axis] = slice_idx        
         self.model.shapes_layer.data = curr_shapes_data
+        self.model.shapes_layer.selected_data = self.last_selected
+
+    def _keep_last_selected(self, *args):
+        if self.model.shapes_layer.selected_data != set():
+            self.last_selected = set(self.model.shapes_layer.selected_data)
 
     def update_rois(self, *args):
         n = self.model.num_rois()
@@ -100,6 +107,7 @@ class CroppingController:
         self.update_rois()
 
     def on_clear_rois(self):
+        self.last_selected = set()
         self.model.clear_rois()
         show_info("ROI list cleared!")
 
@@ -115,3 +123,6 @@ class CroppingController:
 
         saved = self.model.save_csv(out_path, self.gui.tag_edit.value)
         show_info(f"ROI coordinates saved to {saved.name}!")
+
+
+
