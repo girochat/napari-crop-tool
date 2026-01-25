@@ -13,10 +13,11 @@ authors = [
     { name = "Giliane Rochat", email = "giliane.rochat@usz.ch"}
 ]
 readme = "README.md"
-requires-python = ">=3.10, <3.13"
+requires-python = ">=3.11, <=3.13"
 dependencies = [
     "napari",
-    "magicgui"
+    "magicgui",
+    "pyqt"
 ]
 
 [project.optional-dependencies]
