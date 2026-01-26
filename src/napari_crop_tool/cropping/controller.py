@@ -80,8 +80,8 @@ class CroppingController:
             axis = idx_to_axis[curr_axis]
             self.gui.rois_gui[i].value = (
                 f"<b>ROI {i:02}</b>: "
-                f"{axis} start={self.model.get_scroll_start_px(i)}, "
-                f"{axis} end={self.model.get_scroll_end_px(i)}"
+                f"{axis} start={self.model.get_scroll_start_um(i)}, "
+                f"{axis} end={self.model.get_scroll_end_um(i)}"
             )
 
     def on_set_start(self):

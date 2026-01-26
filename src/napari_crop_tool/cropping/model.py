@@ -58,13 +58,23 @@ class CroppingModel:
         val = self.shapes_layer.properties["end_um"][idx]
         return (self.max_px[curr_axis] if np.isnan(val) 
                 else int(val / self.scale[curr_axis]))
+    
+    def get_scroll_start_um(self, idx: int) -> int | float:
+        curr_axis = self.get_track_axis(idx)
+        val = self.shapes_layer.properties["start_um"][idx]
+        return (self.min_um[curr_axis] if np.isnan(val) 
+                else val)
+
+    def get_scroll_end_um(self, idx: int) -> int | float:
+        curr_axis = self.get_track_axis(idx)
+        val = self.shapes_layer.properties["end_um"][idx]
+        return (self.max_um[curr_axis] if np.isnan(val) 
+                else val)
 
     def set_scroll_start_um(self, idx: int, curr_index: int):
-        curr_axis = self.get_track_axis(idx)
         self.shapes_layer.properties["start_um"][idx] = curr_index
 
     def set_scroll_end_um(self, idx: int, curr_index: int):
-        curr_axis = self.get_track_axis(idx)
         self.shapes_layer.properties["end_um"][idx] = curr_index
 
     def clear_rois(self):
@@ -82,10 +92,10 @@ class CroppingModel:
         n = self.num_rois()
         self.shapes_layer.properties = {
             "id": np.array([str(i) for i in range(n)], dtype=str),
-            "start_um": (np.array([self.get_scroll_start_px(i) for i in range(n)], 
-                                    dtype=float) * self.scale[0]),
-            "end_um": (np.array([self.get_scroll_end_px(i) for i in range(n)], 
-                                  dtype=float) * self.scale[0]),
+            "start_um": (np.array([self.get_scroll_start_um(i) for i in range(n)], 
+                                    dtype=float)),
+            "end_um": (np.array([self.get_scroll_end_um(i) for i in range(n)], 
+                                  dtype=float)),
             "track_axis": (np.array([self.get_track_axis(i) for i in range(n)], 
                                   dtype=int)),
         }
@@ -103,8 +113,8 @@ class CroppingModel:
             scroll_axis = self.shapes_layer.properties["track_axis"][i]
             for axis in (0, 1, 2):
                 if axis == scroll_axis:
-                    start_um = self.get_scroll_start_px(i) * self.scale[scroll_axis]
-                    end_um = self.get_scroll_end_px(i) * self.scale[scroll_axis]
+                    start_um = self.get_scroll_start_um(i)
+                    end_um = self.get_scroll_end_um(i)
                     start_um = min(start_um, end_um)
                     end_um = max(start_um, end_um)
                 else:
