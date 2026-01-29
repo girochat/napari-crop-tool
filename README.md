@@ -25,16 +25,17 @@ Planned improvements include:
 - Option A — From napari hub (planned)
   Once published, you’ll be able to install it directly via napari/hub (instructions will appear here).
 
-- Option B — Conda environment (recommended for now)
-  A environment.yml is provided.
+- Option B — Conda/mamba environment (recommended for now)
+  It is recommended to use a conda/mamba environment for this plugin. Here you can find information on how to install [mamba](https://github.com/conda-forge/miniforge#mambaforge) and [conda](https://docs.conda.io/en/latest/miniconda.html).
   ```bash
   conda env create -f environment.yml
-  conda activate <ENV_NAME>
+  conda activate napari-crop
   ```
   Then install the plugin (choose one):
+  
   ```bash
   pip install .
-
+  
   # or for development
   pip install -e .
   ```
