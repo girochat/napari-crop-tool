@@ -56,9 +56,9 @@ For now, see the plugin widget tooltips and the example output CSV format in the
 ## Contributing / Development
 
 Issues and PRs are welcome, especially around:
-	•	coordinate conventions & validation
-	•	additional export formats
-	•	2D support
-	•	saving cropped data (OME-Zarr (currently supported), TIFF, NPY, etc.)
+- coordinate conventions & validation
+- additional export formats
+- 2D support
+- saving cropped data (OME-Zarr (currently supported), TIFF, NPY, etc.)
 
 ## [License](LICENSE)
