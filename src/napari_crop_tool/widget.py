@@ -1,11 +1,18 @@
-# widget.py
-from napari import Viewer
-from magicgui.widgets import Container
-from .layer_selection.controller import LayerSelectionController
+from qtpy.QtWidgets import (
+    QWidget, QVBoxLayout
+)
 
-class MainGUI(Container):
+from napari import Viewer
+from .layer_selection.controller import LayerSelectionControllerQt
+
+
+class MainWidgetQt(QWidget):
     def __init__(self, viewer: Viewer):
-        super().__init__(layout="vertical")
+        super().__init__()
         self.viewer = viewer
-        self.start_controller = LayerSelectionController(viewer)
-        self.extend([self.start_controller.gui])
+        self.entry_controller = LayerSelectionControllerQt(viewer)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 10)
+        layout.addWidget(self.entry_controller.layer_gui)
+        layout.addWidget(self.entry_controller.cropping_gui, stretch=1)

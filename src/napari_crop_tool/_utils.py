@@ -1,20 +1,4 @@
-import numpy as np
-import pandas as pd
-from pathlib import Path
-from magicgui.widgets import Container, Label, PushButton, FileEdit, LineEdit
-from napari import Viewer
-from napari.layers import Image, Labels, Layer, Shapes
-from collections.abc import Sequence
-
-def _layer_choices(widget) -> Sequence[dict[str, Layer]]:
-    pairs = []
-    if len(widget.viewer.layers) == 0:
-        pairs.append(("- - -", None))
-    else:
-        for layer in widget.viewer.layers:
-            if isinstance(layer, Image | Labels):
-                pairs.append((layer.name, layer))
-    return pairs
+from napari.layers import Layer
 
 def _get_scale_from_layer(
     layer: Layer

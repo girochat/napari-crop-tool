@@ -4,32 +4,29 @@ from __future__ import annotations
 from pathlib import Path
 import numpy as np
 from napari import Viewer
-from napari.layers import Layer
+from napari.layers import Layer, Image, Labels
 
 from .model import LayerSelectionModel
-from .gui import LayerSelectionGUI
-from .._utils import _layer_choices, _get_scale_from_layer
+from .gui import LayerSelectionGUIQt
+from .._utils import _get_scale_from_layer
 
 from ..cropping.model import CroppingModel
-from ..cropping.gui import CroppingGUI
+from ..cropping.gui import CroppingGUIQt
 from ..cropping.controller import CroppingController
 
-class LayerSelectionController():
-    """
-    Wires viewer events + GUI events, and spawns a cropping session.
-    """
+class LayerSelectionControllerQt():
 
     def __init__(self, viewer: Viewer):
         self.viewer = viewer
         self.model = LayerSelectionModel(viewer=viewer)
-        self.gui = LayerSelectionGUI(viewer=viewer, layer_choices=_layer_choices)
+        self.layer_gui = LayerSelectionGUIQt()
 
-        self._cropping_gui: CroppingGUI | None = None
-        self._cropping_controller: CroppingController | None = None
+        self.cropping_gui = CroppingGUIQt()
+        self.cropping_controller: CroppingController | None = None
 
         # GUI events
-        self.gui.btn_confirm.changed.connect(self.on_confirm)
-        self.gui.btn_reset.changed.connect(self.on_reset)
+        self.layer_gui.btn_confirm.clicked.connect(self.on_confirm)
+        self.layer_gui.btn_reset.clicked.connect(self.on_reset)
 
         # Viewer events: keep choices in sync
         layers = viewer.layers
@@ -39,39 +36,52 @@ class LayerSelectionController():
         layers.events.reordered.connect(self.refresh_layer_choices)
         layers.events.changed.connect(self.refresh_layer_choices)
 
-    # ---------- viewer sync ----------
-    def refresh_layer_choices(self, _=None):
-        self.gui.layer_list.reset_choices()
-
-        # If we are in selection mode, keep confirm enabled/disabled correct
-        if self.gui.btn_confirm.visible:
-            self.gui.btn_confirm.enabled = (self.gui.layer_list.value is not None)
-        else:
-            # In cropping mode: if user changed layer list, require reset
-            self.gui.set_status("Layer choice changed. Press 'Reset' to change layer.")
-            has_choice = (self.gui.layer_list.value is not None)
-            self.gui.set_reset_state(visible=has_choice, enabled=has_choice)
-
     # ---------- actions ----------
     def on_confirm(self, _=None):
-        selected: Layer | None = self.gui.layer_list.value
+        selected: Layer | None = self.layer_gui.selected_layer()
         if selected is None:
             return
 
         self.model.target_layer = selected
 
-        self.gui.set_status("Target layer selected! Press 'Reset' to change layer.")
-        self.gui.set_confirm_state(visible=False, enabled=False)
-        self.gui.set_reset_state(visible=True, enabled=True)
+        self.layer_gui.set_status("Target layer selected! Press 'Reset' to change layer.")
+        self.layer_gui.set_confirm_state(visible=False, enabled=False)
+        self.layer_gui.set_reset_state(visible=True, enabled=True)
 
         self._enter_cropping_session()
 
     def on_reset(self, _=None):
-        self.gui.set_status("Select a target layer to crop.")
-        self.gui.set_confirm_state(visible=True, enabled=(self.gui.layer_list.value is not None))
-        self.gui.set_reset_state(visible=False, enabled=False)
+        self.layer_gui.set_status("Select a target layer to crop.")
+        self.layer_gui.set_confirm_state(visible=True, 
+                                         enabled=(self.layer_gui.layer_list.count() > 0 and 
+                                                  self.layer_gui.layer_list.currentIndex() >= 0))
+        self.layer_gui.set_reset_state(visible=False, enabled=False)
 
         self._exit_cropping_session()
+
+    # ---------- viewer sync ----------
+    def refresh_layer_choices(self, _=None):
+        combo = self.layer_gui.layer_list
+
+        # try keep same object selected
+        prev_layer = self.layer_gui.selected_layer()
+
+        combo.blockSignals(True)
+        combo.clear()
+
+        for layer in self.viewer.layers:
+            if isinstance(layer, (Image, Labels)):
+                combo.addItem(layer.name, layer)
+
+        # restore selection by identity
+        if prev_layer is not None:
+            for i in range(combo.count()):
+                if combo.itemData(i) is prev_layer:
+                    combo.setCurrentIndex(i)
+                    break
+
+        combo.blockSignals(False)
+        self.layer_gui.btn_confirm.setEnabled(combo.count() > 0 and combo.currentIndex() >= 0)
 
     # ---------- session lifecycle ----------
     def _enter_cropping_session(self):
@@ -81,20 +91,24 @@ class LayerSelectionController():
         # Create shapes layer tailored to dimensionality
         props = (
             {"track_axis": np.array([], dtype=int),
-            "start_um": np.array([], dtype=float), 
-            "end_um": np.array([], dtype=float), 
+            "start_idx": np.array([], dtype=float), 
+            "end_idx": np.array([], dtype=float), 
             "id": np.array([], dtype=str)}
             if layer.ndim > 2
             else {"id": np.array([], dtype=str)}
         )
         self.model.shapes_layer = self.model.viewer.add_shapes(
             ndim=layer.ndim,
-            name="Cropping Box",
+            name="Cropping ToolBox",
             properties=props,
         )
     
         scale = _get_scale_from_layer(layer)
-        out_dir = Path(layer.source.path).parent
+        out_dir = Path(layer.source.path).parent if getattr(layer, "source", None) \
+                   else Path.cwd()
+
+        self.cropping_gui.set_output_path(Path(out_dir, "roi_coords.csv"))
+        self.cropping_gui.set_cropping_enabled(True)
 
         cropping_model = CroppingModel(
             viewer=self.model.viewer,
@@ -102,21 +116,14 @@ class LayerSelectionController():
             scale=scale,
             out_dir=out_dir,
         )
-        cropping_gui = CroppingGUI(out_dir=out_dir)
-        cropping_controller = CroppingController(cropping_model, cropping_gui)
-
-        self._cropping_gui = cropping_gui
-        self._cropping_controller = cropping_controller
-
-        self.gui.extend([self.gui.separator, cropping_gui.container])
+        self.cropping_controller = CroppingController(
+            cropping_model, 
+            self.cropping_gui)
 
     def _exit_cropping_session(self):
-        # remove cropping GUI from parent GUI
-        if self._cropping_gui is not None:
-            self.gui.remove(self._cropping_gui.container)
-            self._cropping_gui = None
-            self._cropping_controller = None
+        self.cropping_gui.set_cropping_enabled(False)
+        self.cropping_gui.clear_roi_labels()
 
-        # remove shapes + clear model state
         self.model.remove_shapes_if_any()
         self.model.clear_session_state()
+        self.cropping_controller = None

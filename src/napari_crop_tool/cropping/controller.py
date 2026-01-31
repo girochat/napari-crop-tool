@@ -1,15 +1,13 @@
 # cropping/controller.py
 from __future__ import annotations
 from pathlib import Path
-from magicgui.widgets import Label
 
 from .model import CroppingModel
-from .gui import CroppingGUI
+from .gui import CroppingGUIQt
 
 from napari.utils.notifications import (
     show_info,
-    show_warning,
-    show_error,
+    show_warning
 )
 
 class CroppingController:
@@ -17,7 +15,7 @@ class CroppingController:
     def __init__(
         self, 
         model: CroppingModel, 
-        gui: CroppingGUI
+        gui: CroppingGUIQt,
     ):
         self.model = model
         self.gui = gui
@@ -27,10 +25,10 @@ class CroppingController:
         self.model.shapes_layer.events.data.connect(self.update_rois)
         self.model.shapes_layer.events.data.connect(self._keep_last_selected)
         self.model.viewer.dims.events.point.connect(self._project_shapes)
-        self.gui.set_start_btn.clicked.connect(self.on_set_start)
-        self.gui.set_stop_btn.clicked.connect(self.on_set_stop)
-        self.gui.clear_rois_btn.clicked.connect(self.on_clear_rois)
-        self.gui.save_btn.clicked.connect(self.on_save)
+        self.gui.btn_set_start.clicked.connect(self.on_set_start)
+        self.gui.btn_set_stop.clicked.connect(self.on_set_stop)
+        self.gui.btn_clear_rois.clicked.connect(self.on_clear_rois)
+        self.gui.btn_save.clicked.connect(self.on_save)
 
         # Initial paint
         self.update_rois()
@@ -53,36 +51,35 @@ class CroppingController:
 
     def update_rois(self, *args):
         n = self.model.num_rois()
+        print(n)
+        print(self.gui.roi_list_layout.count())
+        print(self.model.viewer.dims.order[0])
+        print(self.model.shapes_layer.properties)
 
-        if len(self.gui.rois_gui) < n:
-            n_new_rois = n - len(self.gui.rois_gui)
+        if (self.gui.roi_list_layout.count()-1) < n:
+            n_new_rois = n - (self.gui.roi_list_layout.count()-1)
             scroll_axis = self.model.viewer.dims.order[0]
             for i in range(1, n_new_rois+1):
                 self.model.shapes_layer.properties["track_axis"][-i] = scroll_axis
-                self.model.shapes_layer.properties["end_um"][-i] = self.model.max_um[scroll_axis]
-                self.model.shapes_layer.properties["start_um"][-i] = self.model.min_um[scroll_axis]
-
-        # Ensure we have enough labels
-        while len(self.gui.rois_gui) < n:
-            self.gui.rois_gui.append(Label())
-
-        while len(self.gui.rois_gui) > n:
-            self.gui.rois_gui.pop()        
+                self.model.shapes_layer.properties["end_idx"][-i] = self.model.max_um[scroll_axis]
+                self.model.shapes_layer.properties["start_idx"][-i] = self.model.min_um[scroll_axis]   
             
         # Keep properties consistent
         self.model.sync_properties()
 
         # Update display text
         idx_to_axis = {0: "Z", 1: "Y", 2: "X"}
+        roi_list = []
         for i in range(n):
 
             curr_axis = self.model.get_track_axis(i)
             axis = idx_to_axis[curr_axis]
-            self.gui.rois_gui[i].value = (
+            roi_list.append(
                 f"<b>ROI {i:02}</b>: "
                 f"{axis} start={self.model.get_scroll_start_um(i)}, "
                 f"{axis} end={self.model.get_scroll_end_um(i)}"
             )
+        self.gui.set_roi_labels(roi_list)
 
     def on_set_start(self):
         idx = self.model.get_selected_single_roi_index()
@@ -116,13 +113,10 @@ class CroppingController:
             show_warning("No cropping box drawn!")
             return
 
-        out_path = Path(self.gui.file_edit.value)
+        out_path = Path(self.gui.text_file.text())
         if out_path.suffix.lower() != ".csv":
             show_warning("Only CSV saving is implemented for now.")
             return
 
-        saved = self.model.save_csv(out_path, self.gui.tag_edit.value)
+        saved = self.model.save_csv(out_path, self.gui.text_tag.text())
         show_info(f"ROI coordinates saved to {saved.name}!")
-
-
-

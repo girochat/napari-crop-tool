@@ -1,5 +1,6 @@
 # cropping/model.py
 from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
@@ -49,52 +50,52 @@ class CroppingModel:
     
     def get_scroll_start_px(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
-        val = self.shapes_layer.properties["start_um"][idx]
+        val = self.shapes_layer.properties["start_idx"][idx]
         return (self.min_px[curr_axis] if np.isnan(val) 
                 else int(val / self.scale[curr_axis]))
 
     def get_scroll_end_px(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
-        val = self.shapes_layer.properties["end_um"][idx]
+        val = self.shapes_layer.properties["end_idx"][idx]
         return (self.max_px[curr_axis] if np.isnan(val) 
                 else int(val / self.scale[curr_axis]))
     
     def get_scroll_start_um(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
-        val = self.shapes_layer.properties["start_um"][idx]
+        val = self.shapes_layer.properties["start_idx"][idx]
         return (self.min_um[curr_axis] if np.isnan(val) 
                 else val)
 
     def get_scroll_end_um(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
-        val = self.shapes_layer.properties["end_um"][idx]
+        val = self.shapes_layer.properties["end_idx"][idx]
         return (self.max_um[curr_axis] if np.isnan(val) 
                 else val)
 
     def set_scroll_start_um(self, idx: int, curr_index: int):
-        self.shapes_layer.properties["start_um"][idx] = curr_index
+        self.shapes_layer.properties["start_idx"][idx] = curr_index
 
     def set_scroll_end_um(self, idx: int, curr_index: int):
-        self.shapes_layer.properties["end_um"][idx] = curr_index
+        self.shapes_layer.properties["end_idx"][idx] = curr_index
 
     def clear_rois(self):
         self.shapes_layer.data = []
         self.shapes_layer.selected_data = set()
         self.shapes_layer.properties = {
             "id": np.array([], dtype=str),
-            "start_um": np.array([], dtype=float),
-            "end_um": np.array([], dtype=float),
+            "start_idx": np.array([], dtype=float),
+            "end_idx": np.array([], dtype=float),
             "track_axis" : np.array([], dtype=int)
         }
 
     def sync_properties(self):
-        """Ensure id / z_start_um / z_end_um arrays match current shapes."""
+        """Ensure id / start_idx / end_idx arrays match current shapes."""
         n = self.num_rois()
         self.shapes_layer.properties = {
             "id": np.array([str(i) for i in range(n)], dtype=str),
-            "start_um": (np.array([self.get_scroll_start_um(i) for i in range(n)], 
+            "start_idx": (np.array([self.get_scroll_start_um(i) for i in range(n)], 
                                     dtype=float)),
-            "end_um": (np.array([self.get_scroll_end_um(i) for i in range(n)], 
+            "end_idx": (np.array([self.get_scroll_end_um(i) for i in range(n)], 
                                   dtype=float)),
             "track_axis": (np.array([self.get_track_axis(i) for i in range(n)], 
                                   dtype=int)),
@@ -103,8 +104,8 @@ class CroppingModel:
     # ---- saving ----
     def save_csv(self, out_path: Path, tag: str) -> Path:
         roi_df = pd.DataFrame(
-            columns=["x_start_um", "y_start_um", "x_end_um", "y_end_um", 
-                     "z_start_um", "z_end_um"]
+            columns=["x_start", "y_start", "x_end", "y_end", 
+                     "z_start", "z_end"]
         )
 
         id_to_axis = {0: "z", 1: "y", 2: "x"}
@@ -121,8 +122,8 @@ class CroppingModel:
                     start_um = roi[:, axis].min()
                     end_um = roi[:, axis].max()
                 
-                roi_dict[f"{id_to_axis[axis]}_start_um"] = np.round(start_um, 3)
-                roi_dict[f"{id_to_axis[axis]}_end_um"] = np.round(end_um, 3)
+                roi_dict[f"{id_to_axis[axis]}_start"] = np.round(start_um, 3)
+                roi_dict[f"{id_to_axis[axis]}_end"] = np.round(end_um, 3)
             roi_df.loc[i] = roi_dict
 
         prefix = f"{tag}_roi_" if tag else "roi_"
@@ -131,4 +132,3 @@ class CroppingModel:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         roi_df.to_csv(out_path, index=True)
         return out_path
-
