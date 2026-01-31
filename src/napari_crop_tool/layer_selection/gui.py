@@ -1,56 +1,63 @@
 # layer_selection/gui.py
-from magicgui.widgets import Container, ComboBox, Button, Label
-from napari import Viewer
-from collections.abc import Sequence
-from napari.layers import Layer
-from typing import Any
+from __future__ import annotations
 
-class LayerSelectionGUI(Container):
-    """GUI only (magicgui widgets)."""
-    def __init__(self, viewer: Viewer, layer_choices):
-        super().__init__(layout="vertical")
-        self.viewer = viewer
+from qtpy.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QComboBox,
+    QPushButton, QSizePolicy
+)
+from qtpy.QtCore import Signal
 
-        self.header = Label(value="<b>Layer Selection</b>")
-        self.status = Label(value="Select a target layer to crop.")
-        self.separator = Label(value="---------------------------")
+class LayerSelectionGUIQt(QWidget):  
 
-        self.layer_list = LayerChoiceWidget(
-            name="layers",
-            label="Target layer",
-            choices=layer_choices,
-            viewer=self.viewer,
-        )
+    confirm_clicked = Signal()
+    reset_clicked = Signal()
 
-        self.btn_confirm = Button(label="Confirm", 
-                                  enabled=(self.layer_list.value is not None))
-        self.btn_reset = Button(label="Reset", 
-                                enabled=False, visible=False)
+    def __init__(self):#, viewer: Viewer, layer_choices):
+        super().__init__()
 
-        #self.controls = Container(
-        #    widgets=[self.layer_list, self.btn_confirm, self.btn_reset],
-        #    layout="vertical"
-        #)
-        self.extend([self.header, self.status, 
-                     self.layer_list, self.btn_confirm, self.btn_reset])
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        
+        # ---------- Section 1: Layer Selection ----------
+        self.grp_layer = QGroupBox("Layer Selection")
+        layer_layout = QVBoxLayout(self.grp_layer)
 
-    # Small GUI helpers (practical MVC)
-    def set_status(self, text: str):
-        self.status.value = text
+        self.lbl_status = QLabel("Select a target layer to crop.")
+        self.lbl_status.setWordWrap(True)
 
-    def set_confirm_state(self, *, visible: bool, enabled: bool):
-        self.btn_confirm.visible = visible
-        self.btn_confirm.enabled = enabled
+        self.layer_list = QComboBox()
+        self.layer_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-    def set_reset_state(self, *, visible: bool, enabled: bool):
-        self.btn_reset.visible = visible
-        self.btn_reset.enabled = enabled
+        btn_row = QHBoxLayout()
+        self.btn_confirm = QPushButton("Confirm")
+        self.btn_reset = QPushButton("Reset")
+        self.btn_reset.setVisible(False)  # only visible after confirm
+        btn_row.addWidget(self.btn_confirm)
+        btn_row.addWidget(self.btn_reset)
+        btn_row.addStretch(1)
 
+        layer_layout.addWidget(self.lbl_status)
+        layer_layout.addWidget(self.layer_list)
+        layer_layout.addLayout(btn_row)
 
-class LayerChoiceWidget(ComboBox):
-    def __init__(self, 
-                 viewer: Viewer, 
-                 choices: Sequence[dict[str, Layer]] = None,
-                 **base_widget_kwargs: dict[str, Any]):
-        self.viewer = viewer
-        super().__init__(choices=choices, **base_widget_kwargs)
+        root.addWidget(self.grp_layer)
+
+        self.btn_confirm.clicked.connect(self.confirm_clicked)
+        self.btn_reset.clicked.connect(self.reset_clicked)
+
+    def set_status(self, text: str) -> None:
+        self.lbl_status.setText(text)
+
+    def set_confirm_state(self, *, visible: bool, enabled: bool) -> None:
+        self.btn_confirm.setVisible(visible)
+        self.btn_confirm.setEnabled(enabled)
+
+    def set_reset_state(self, *, visible: bool, enabled: bool) -> None:
+        self.btn_reset.setVisible(visible)
+        self.btn_reset.setEnabled(enabled)
+
+    def selected_layer(self):
+        i = self.layer_list.currentIndex()
+        if i < 0:
+            return None
+        return self.layer_list.itemData(i)

@@ -6,7 +6,6 @@ dependencies:
   - python>=3.11,<3.13
   - pyqt
   - napari
-  - magicgui
   - napari-ome-zarr
   - pip
   - pip:

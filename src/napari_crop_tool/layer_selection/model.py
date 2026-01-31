@@ -1,5 +1,6 @@
 # layer_selection/model.py
 from __future__ import annotations
+
 from dataclasses import dataclass
 from napari import Viewer
 from napari.layers import Layer, Shapes
