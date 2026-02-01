@@ -16,12 +16,12 @@ readme = "README.md"
 requires-python = ">=3.11, <3.13"
 dependencies = [
     "napari",
-    "pyqt",
+    "qtpy",
     "napari-ome-zarr"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-qt", "ruff", "hatch", "napari-plugin-devtools"]
+dev = ["pytest", "pytest-qt", "ruff", "hatch", "hatch-vcs", "napari-plugin-devtools"]
 
 [project.entry-points."napari.manifest"]
 napari-crop-tool = "napari_crop_tool:napari.yaml"

@@ -4,9 +4,6 @@ channels:
   - defaults
 dependencies:
   - python>=3.11,<3.13
-  - pyqt
+  - qtpy
   - napari
   - napari-ome-zarr
-  - pip
-  - pip:
-    - .
