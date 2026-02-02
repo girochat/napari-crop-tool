@@ -51,10 +51,6 @@ class CroppingController:
 
     def update_rois(self, *args):
         n = self.model.num_rois()
-        print(n)
-        print(self.gui.roi_list_layout.count())
-        print(self.model.viewer.dims.order[0])
-        print(self.model.shapes_layer.properties)
 
         if (self.gui.roi_list_layout.count()-1) < n:
             n_new_rois = n - (self.gui.roi_list_layout.count()-1)

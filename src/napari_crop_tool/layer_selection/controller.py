@@ -36,6 +36,8 @@ class LayerSelectionControllerQt():
         layers.events.reordered.connect(self.refresh_layer_choices)
         layers.events.changed.connect(self.refresh_layer_choices)
 
+        self.refresh_layer_choices()
+
     # ---------- actions ----------
     def on_confirm(self, _=None):
         selected: Layer | None = self.layer_gui.selected_layer()
