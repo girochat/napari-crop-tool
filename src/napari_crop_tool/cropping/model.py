@@ -73,10 +73,18 @@ class CroppingModel:
                 else val)
 
     def set_scroll_start_um(self, idx: int, curr_index: int):
-        self.shapes_layer.properties["start_idx"][idx] = curr_index
+        props = dict(self.shapes_layer.properties)
+        start_idx = props["start_idx"].copy()
+        start_idx[idx] = curr_index
+        props["start_idx"] = start_idx
+        self.shapes_layer.properties = props
 
     def set_scroll_end_um(self, idx: int, curr_index: int):
-        self.shapes_layer.properties["end_idx"][idx] = curr_index
+        props = dict(self.shapes_layer.properties)
+        end_idx = props["end_idx"].copy()
+        end_idx[idx] = curr_index
+        props["end_idx"] = end_idx
+        self.shapes_layer.properties = props
 
     def clear_rois(self):
         self.shapes_layer.data = []

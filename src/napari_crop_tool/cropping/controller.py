@@ -55,10 +55,20 @@ class CroppingController:
         if (self.gui.roi_list_layout.count()-1) < n:
             n_new_rois = n - (self.gui.roi_list_layout.count()-1)
             scroll_axis = self.model.viewer.dims.order[0]
+            props = dict(self.model.shapes_layer.properties)
+            track_axis = props["track_axis"].copy()
+            start_idx = props["start_idx"].copy()
+            end_idx = props["end_idx"].copy()
             for i in range(1, n_new_rois+1):
-                self.model.shapes_layer.properties["track_axis"][-i] = scroll_axis
-                self.model.shapes_layer.properties["end_idx"][-i] = self.model.max_um[scroll_axis]
-                self.model.shapes_layer.properties["start_idx"][-i] = self.model.min_um[scroll_axis]   
+                track_axis[-i] = scroll_axis
+                start_idx[-i] = self.model.min_um[scroll_axis]
+                end_idx[-i] = self.model.max_um[scroll_axis]
+
+            props["track_axis"] = track_axis
+            props["start_idx"] = start_idx
+            props["end_idx"] = end_idx
+
+            self.model.shapes_layer.properties = props
             
         # Keep properties consistent
         self.model.sync_properties()
@@ -109,10 +119,10 @@ class CroppingController:
             show_warning("No cropping box drawn!")
             return
 
-        out_path = Path(self.gui.text_file.text())
+        out_path = Path(self.gui.txt_file.text())
         if out_path.suffix.lower() != ".csv":
             show_warning("Only CSV saving is implemented for now.")
             return
 
-        saved = self.model.save_csv(out_path, self.gui.text_tag.text())
+        saved = self.model.save_csv(out_path, self.gui.txt_tag.text())
         show_info(f"ROI coordinates saved to {saved.name}!")
