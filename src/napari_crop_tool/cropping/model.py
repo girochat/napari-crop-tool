@@ -124,14 +124,12 @@ class CroppingModel:
                 if axis == scroll_axis:
                     start_um = self.get_scroll_start_um(i)
                     end_um = self.get_scroll_end_um(i)
-                    start_um = min(start_um, end_um)
-                    end_um = max(start_um, end_um)
                 else:
                     start_um = roi[:, axis].min()
                     end_um = roi[:, axis].max()
                 
-                roi_dict[f"{id_to_axis[axis]}_start"] = np.round(start_um, 3)
-                roi_dict[f"{id_to_axis[axis]}_end"] = np.round(end_um, 3)
+                roi_dict[f"{id_to_axis[axis]}_start"] = np.round(min(start_um, end_um), 3)
+                roi_dict[f"{id_to_axis[axis]}_end"] = np.round(max(start_um, end_um), 3)
             roi_df.loc[i] = roi_dict
 
         prefix = f"{tag}_roi_" if tag else "roi_"
