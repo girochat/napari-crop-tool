@@ -106,7 +106,7 @@ class LayerSelectionControllerQt():
         )
     
         scale = _get_scale_from_layer(layer)
-        out_dir = Path(layer.source.path).parent if getattr(layer, "source", None) \
+        out_dir = Path(layer.source.path) if getattr(layer, "source", None) \
                    else Path.cwd()
 
         self.cropping_gui.set_output_path(Path(out_dir, "roi_coords.csv"))
