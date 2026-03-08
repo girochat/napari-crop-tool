@@ -8,6 +8,7 @@ This plugin helps you define cuboid ROIs in a 3D volume:
 - Draw a rectangle ROI in the viewer along any axis
 - Scroll through the remaining axis to set the start and stop slices
 - Export the resulting ROI(s) as a CSV table of coordinates
+- Export the ROI(s) directly to disk (not yet implemented)
 
 ✅ Supported today:  
 - 3D images/volumes (only)  
@@ -43,11 +44,12 @@ Planned improvements include:
 ## Quick start
 1. Open napari and load a 3D image.
 2. Activate the plugin widget from the Plugins menu.
-3. Draw a rectangle ROI in the current view.
-4. Scroll to set the ROI start/stop along the remaining axis.
-5. Export ROI coordinates to CSV.
+3. Select a target layer to crop.
+4. Draw a rectangle ROI in the current view.
+5. Scroll to set the ROI start/stop along the remaining axis.
+6. Export ROI coordinates to CSV.
 
-The CSV contains the ROI bounds in pixel coordinates (axis-aligned).
+The CSV contains the ROI bounds in world coordinates (axis-aligned). 
 
 ## Documentation
 
