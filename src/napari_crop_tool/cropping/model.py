@@ -89,12 +89,6 @@ class CroppingModel:
     def clear_rois(self):
         self.shapes_layer.selected_data = set()
         self.shapes_layer.data = []
-        #self.shapes_layer.properties = {
-        #    "id": np.array([], dtype=str),
-        #    "start_idx": np.array([], dtype=float),
-        #    "end_idx": np.array([], dtype=float),
-        #    "track_axis" : np.array([], dtype=float)
-        #}
 
     def delete_roi(self, idx: int):
         data = list(self.shapes_layer.data)
@@ -130,10 +124,8 @@ class CroppingModel:
         curr_axis = self.get_track_axis(idx)
         slice_idx = self.viewer.dims.current_step[curr_axis]
 
+        # Update ROI to new size
         new_roi = roi.copy()
-
-        # keep other dims unchanged, replace Y/X box
-        # axis order assumed Z,Y,X for 3D
         new_roi[:, curr_axis] = slice_idx
 
         # rectangle corners
@@ -193,6 +185,7 @@ class CroppingModel:
         prefix = f"{tag}_roi_" if tag else "roi_"
         roi_df.index = [f"{prefix}{i:02}" for i in range(len(roi_df))]
 
+        
         out_path.parent.mkdir(parents=True, exist_ok=True)
         roi_df.to_csv(out_path, index=True)
         return out_path

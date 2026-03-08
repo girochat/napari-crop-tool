@@ -2,6 +2,7 @@
 from __future__ import annotations
 from pathlib import Path
 from contextlib import contextmanager
+from qtpy.QtWidgets import QMessageBox
 
 from .model import CroppingModel
 from .gui import CroppingGUIQt
@@ -208,6 +209,16 @@ class CroppingController:
         if out_path.suffix.lower() != ".csv":
             show_warning("Only CSV saving is implemented for now.")
             return
+        
+        if out_path.exists():
+            reply = QMessageBox.question(
+                self.gui,  # or self.viewer.window.qt_viewer, or None
+                "Overwrite file?", f"File '{out_path.name}' already exists.\n\nDo you want to overwrite it?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                return
 
         saved = self.model.save_csv(out_path, self.gui.txt_tag.text())
         show_info(f"ROI coordinates saved to {saved.name}!")
