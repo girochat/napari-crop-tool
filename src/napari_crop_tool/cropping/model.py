@@ -93,12 +93,71 @@ class CroppingModel:
             "id": np.array([], dtype=str),
             "start_idx": np.array([], dtype=float),
             "end_idx": np.array([], dtype=float),
-            "track_axis" : np.array([], dtype=int)
+            "track_axis" : np.array([], dtype=float)
         }
+
+    def delete_roi(self, idx: int):
+        data = list(self.shapes_layer.data)
+
+        if idx < 0 or idx >= len(data):
+            return
+
+        del data[idx]
+        self.shapes_layer.data = data
+        self.sync_properties()
+
+    def set_rectangle_size(self, idx: int, size_x: float | None = None, size_y: float | None = None):
+        data = list(self.shapes_layer.data)
+        roi = np.array(data[idx], dtype=float)
+        curr_axis = self.get_track_axis(idx)
+        axis1 = self.viewer.dims.order[-2]
+        axis2 = self.viewer.dims.order[-1]
+
+        if roi.shape[0] != 4:
+            raise ValueError("Selected ROI is not a rectangle.")
+
+        # assuming vertices define an axis-aligned rectangle
+        y_min = roi[:, axis1].min()
+        y_max = roi[:, axis1].max()
+        x_min = roi[:, axis2].min()
+        x_max = roi[:, axis2].max()
+
+        if size_y is None:
+            size_y = y_max - y_min
+        if size_x is None:
+            size_x = x_max - x_min
+
+        curr_axis = self.get_track_axis(idx)
+        slice_idx = self.viewer.dims.current_step[curr_axis]
+
+        new_roi = roi.copy()
+
+        # keep other dims unchanged, replace Y/X box
+        # axis order assumed Z,Y,X for 3D
+        new_roi[:, curr_axis] = slice_idx
+
+        # rectangle corners
+        # top-left, top-right, bottom-right, bottom-left
+        new_roi[0, axis1] = y_min
+        new_roi[0, axis2] = x_min
+
+        new_roi[1, axis1] = y_min
+        new_roi[1, axis2] = x_min + size_x
+
+        new_roi[2, axis1] = y_min + size_y
+        new_roi[2, axis2] = x_min + size_x
+
+        new_roi[3, axis1] = y_min + size_y
+        new_roi[3, axis2] = x_min
+
+        data[idx] = new_roi
+        self.shapes_layer.data = data
+        self.shapes_layer.selected_data = {idx}
 
     def sync_properties(self):
         """Ensure id / start_idx / end_idx arrays match current shapes."""
         n = self.num_rois()
+        print(f"Number of roi from sync prop: {n}")
         self.shapes_layer.properties = {
             "id": np.array([str(i) for i in range(n)], dtype=str),
             "start_idx": (np.array([self.get_scroll_start_um(i) for i in range(n)], 
@@ -106,7 +165,7 @@ class CroppingModel:
             "end_idx": (np.array([self.get_scroll_end_um(i) for i in range(n)], 
                                   dtype=float)),
             "track_axis": (np.array([self.get_track_axis(i) for i in range(n)], 
-                                  dtype=int)),
+                                  dtype=float)),
         }
 
     # ---- saving ----
