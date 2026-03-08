@@ -87,14 +87,14 @@ class CroppingModel:
         self.shapes_layer.properties = props
 
     def clear_rois(self):
-        self.shapes_layer.data = []
         self.shapes_layer.selected_data = set()
-        self.shapes_layer.properties = {
-            "id": np.array([], dtype=str),
-            "start_idx": np.array([], dtype=float),
-            "end_idx": np.array([], dtype=float),
-            "track_axis" : np.array([], dtype=float)
-        }
+        self.shapes_layer.data = []
+        #self.shapes_layer.properties = {
+        #    "id": np.array([], dtype=str),
+        #    "start_idx": np.array([], dtype=float),
+        #    "end_idx": np.array([], dtype=float),
+        #    "track_axis" : np.array([], dtype=float)
+        #}
 
     def delete_roi(self, idx: int):
         data = list(self.shapes_layer.data)
@@ -157,7 +157,6 @@ class CroppingModel:
     def sync_properties(self):
         """Ensure id / start_idx / end_idx arrays match current shapes."""
         n = self.num_rois()
-        print(f"Number of roi from sync prop: {n}")
         self.shapes_layer.properties = {
             "id": np.array([str(i) for i in range(n)], dtype=str),
             "start_idx": (np.array([self.get_scroll_start_um(i) for i in range(n)], 

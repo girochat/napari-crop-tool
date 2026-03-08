@@ -22,7 +22,6 @@ class CroppingController:
         self.gui = gui
         self.selected_roi_idx: int | None = None
         self._restoring_selection = False
-        self._updating_list_selection = False
         self._suspend_roi_sync = False
         self._prev_num_rois = self.model.num_rois()
 
@@ -145,8 +144,8 @@ class CroppingController:
             axis = idx_to_axis[curr_axis]
             roi_list.append(
                 f"ROI {i:02}: "
-                f"{axis} start={self.model.get_scroll_start_um(i)}, "
-                f"{axis} end={self.model.get_scroll_end_um(i)}"
+                f"{axis} start={self.model.get_scroll_start_um(i):.2f}, "
+                f"{axis} end={self.model.get_scroll_end_um(i):.2f}"
             )
         self.gui.set_roi_labels(roi_list)
 
@@ -184,8 +183,20 @@ class CroppingController:
         self.update_rois()
 
     def on_clear_rois(self):
-        self.last_selected = set()
-        self.model.clear_rois()
+        self.selected_roi_idx = None
+        self._restoring_selection = True
+        try:
+            self.model.shapes_layer.selected_data = set()
+            self.gui.set_selected_roi_row(None)
+        finally:
+            self._restoring_selection = False
+        
+        with self._suspend_sync():
+            self.model.clear_rois()
+        
+        self.update_rois()
+        self._apply_selected_roi()
+        self.model.shapes_layer.refresh()
         show_info("ROI list cleared!")
 
     def on_save(self):
@@ -240,6 +251,8 @@ class CroppingController:
         self.update_rois()
         self._apply_selected_roi()
         self.model.shapes_layer.refresh()
+
+        show_info(f"ROI {idx:02} deleted!")
 
     def on_set_rectangle_size(self):
         idx = self.model.get_selected_single_roi_index()
