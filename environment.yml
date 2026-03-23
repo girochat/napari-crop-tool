@@ -7,3 +7,4 @@ dependencies:
   - qtpy
   - napari
   - napari-ome-zarr
+  - pyqt

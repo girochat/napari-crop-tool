@@ -15,13 +15,25 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11, <3.13"
 dependencies = [
-    "napari",
     "qtpy",
-    "napari-ome-zarr"
+    "pyqt5"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-qt", "ruff", "hatch", "hatch-vcs", "napari-plugin-devtools"]
+dev = [
+    "pytest", 
+    "pytest-qt", 
+    "ruff", 
+    "hatch", 
+    "hatch-vcs", 
+    "napari-plugin-devtools"
+    ]
+
+napari = [
+    "napari[pyqt5]",
+    "napari-ome-zarr",
+    #"napari-crop-tool",
+]
 
 [project.entry-points."napari.manifest"]
 napari-crop-tool = "napari_crop_tool:napari.yaml"
