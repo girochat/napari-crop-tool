@@ -63,7 +63,7 @@ class CroppingController:
             scroll_roi_axis = self.model.get_track_axis(i)
             if curr_axis == scroll_roi_axis:
                 slice_idx = self.model.viewer.dims.current_step[curr_axis]
-                curr_shapes_data[i][:,curr_axis] = slice_idx    
+                curr_shapes_data[i][:, curr_axis] = slice_idx
         with self._suspend_sync():    
             self.model.shapes_layer.data = curr_shapes_data
         self._apply_selected_roi()
@@ -144,9 +144,11 @@ class CroppingController:
             curr_axis = self.model.get_track_axis(i)
             axis = idx_to_axis[curr_axis]
             roi_list.append(
-                f"ROI {i:02}: "
-                f"{axis} start={self.model.get_scroll_start_um(i):.2f}, "
-                f"{axis} end={self.model.get_scroll_end_um(i):.2f}"
+                f"ROI {i:02}:\n"
+                f"    {axis} slice: {self.model.get_scroll_start_px(i):d}-"
+                f"{self.model.get_scroll_end_px(i):d} "
+                f"    (in world units: {self.model.get_scroll_start_um(i):.2f}-"
+                f"{self.model.get_scroll_end_um(i):.2f})"
             )
         self.gui.set_roi_labels(roi_list)
 

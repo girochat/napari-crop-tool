@@ -102,6 +102,9 @@ class LayerSelectionControllerQt():
         self.model.shapes_layer = self.model.viewer.add_shapes(
             ndim=layer.ndim,
             name="Cropping ToolBox",
+            scale=layer.scale,
+            translate=layer.translate,
+            edge_width=0,
             properties=props,
         )
     

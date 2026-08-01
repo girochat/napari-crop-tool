@@ -74,15 +74,17 @@ class CroppingModel:
 
     def set_scroll_start_um(self, idx: int, curr_index: int):
         props = dict(self.shapes_layer.properties)
+        curr_axis = self.get_track_axis(idx)
         start_idx = props["start_idx"].copy()
-        start_idx[idx] = curr_index
+        start_idx[idx] = curr_index * self.scale[curr_axis]
         props["start_idx"] = start_idx
         self.shapes_layer.properties = props
 
     def set_scroll_end_um(self, idx: int, curr_index: int):
         props = dict(self.shapes_layer.properties)
+        curr_axis = self.get_track_axis(idx)
         end_idx = props["end_idx"].copy()
-        end_idx[idx] = curr_index
+        end_idx[idx] = curr_index * self.scale[curr_axis]
         props["end_idx"] = end_idx
         self.shapes_layer.properties = props
 
