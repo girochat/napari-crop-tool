@@ -16,7 +16,7 @@ readme = "README.md"
 requires-python = ">=3.11, <3.13"
 dependencies = [
     "qtpy",
-    "pyqt5"
+    "pyqt6"
 ]
 
 [project.optional-dependencies]
@@ -30,7 +30,7 @@ dev = [
     ]
 
 napari = [
-    "napari[pyqt5]",
+    "napari[pyqt6]",
     "napari-ome-zarr",
     #"napari-crop-tool",
 ]
