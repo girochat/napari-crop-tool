@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python>=3.11,<3.13
   - qtpy
-  - napari
+  - napari>=0.8.0,<0.9.1
   - napari-ome-zarr
+  - napari-animation
   - pyqt
