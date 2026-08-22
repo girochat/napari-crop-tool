@@ -31,8 +31,7 @@ dev = [
 
 napari = [
     "napari[pyqt6]",
-    "napari-ome-zarr",
-    #"napari-crop-tool",
+    "napari-ome-zarr"
 ]
 
 [project.entry-points."napari.manifest"]
