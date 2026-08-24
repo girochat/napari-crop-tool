@@ -103,6 +103,7 @@ class LayerSelectionControllerQt():
             ndim=layer.ndim,
             name="Cropping ToolBox",
             scale=layer.scale,
+            units=layer.units,
             translate=layer.translate,
             edge_width=0,
             properties=props,

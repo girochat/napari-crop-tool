@@ -201,3 +201,7 @@ class CroppingModel:
 
         prefix = f"{tag}_roi_" if tag else "roi_"
         roi_df.index = [f"{prefix}{i:02}" for i in range(len(roi_df))]
+        
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        roi_df.to_csv(out_path, index=True)
+        return out_path
