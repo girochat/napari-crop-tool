@@ -129,6 +129,9 @@ class LayerSelectionControllerQt():
         self.cropping_gui.set_cropping_enabled(False)
         self.cropping_gui.clear_roi_labels()
 
+        if self.cropping_controller is not None:
+            self.cropping_controller.dispose()  
+
         self.model.remove_shapes_if_any()
         self.model.clear_session_state()
         self.cropping_controller = None
