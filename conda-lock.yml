@@ -23,10 +23,10 @@ metadata:
   - url: defaults
     used_env_vars: []
   platforms:
-  - win-64
   - linux-64
   - osx-64
   - osx-arm64
+  - win-64
   sources:
   - environment.yml
 package:
@@ -8216,10 +8216,10 @@ package:
     libstdcxx: '>=15'
     xorg-libx11: '>=1.8.13,<2.0a0'
     xorg-libxrandr: '>=1.5.5,<2.0a0'
-  url: https://conda.anaconda.org/conda-forge/linux-64/libvulkan-loader-1.4.357.0-h0e34353_1.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/libvulkan-loader-1.4.357.0-h0e34353_2.conda
   hash:
-    md5: 8dcfd865081c198717384aec43fc4b98
-    sha256: 9ae82bfc37634f2d3ecf4c7cb43d43ec3d916de17ca9cfc393df457b043db8ed
+    md5: c5f5f159b66332152197893427071695
+    sha256: a70c25b66321ee77f9892b205e3247263c400803f543dc8aca53d569a59c5a77
   category: main
   optional: false
 - name: libvulkan-loader
@@ -8230,10 +8230,10 @@ package:
     ucrt: '>=10.0.20348.0'
     vc: '>=14.3,<15'
     vc14_runtime: '>=14.44.35208'
-  url: https://conda.anaconda.org/conda-forge/win-64/libvulkan-loader-1.4.357.0-h477610d_1.conda
+  url: https://conda.anaconda.org/conda-forge/win-64/libvulkan-loader-1.4.357.0-h477610d_2.conda
   hash:
-    md5: 9e8ce5cb5f35d8ddc8a9598a7edd31f8
-    sha256: 491be07373eb3d66f3d2f28615036c8626f2cdfe08a534b580af7aebf66a3010
+    md5: aaeed7feddbfd7454f8853a5eae8d902
+    sha256: 4b094443126c5fc38d200eb0ea335b67e64d966d7aa737bb3141217a787b0c73
   category: main
   optional: false
 - name: libwebp-base
@@ -11820,13 +11820,13 @@ package:
   platform: linux-64
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
-    libgcc: '>=14'
+    libgcc: '>=15'
     python: ''
     python_abi: 3.12.*
-  url: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py312h5253ce2_0.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py312h1b36aeb_1.conda
   hash:
-    md5: dd94c506b119130aef5a9382aed648e7
-    sha256: d834fd656133c9e4eaf63ffe9a117c7d0917d86d89f7d64073f4e3a0020bd8a7
+    md5: 1653ce584b7859810f116e592eba9c0c
+    sha256: 2c6e88ac7aa5384fb843cb96023deb4382d6d5afbc81f5db1c7a1ef09c9e3090
   category: main
   optional: false
 - name: psutil
@@ -11834,13 +11834,13 @@ package:
   manager: conda
   platform: osx-64
   dependencies:
-    __osx: '>=10.13'
+    __osx: '>=11.0'
     python: ''
     python_abi: 3.12.*
-  url: https://conda.anaconda.org/conda-forge/osx-64/psutil-7.2.2-py312hf7082af_0.conda
+  url: https://conda.anaconda.org/conda-forge/osx-64/psutil-7.2.2-py312hdc27ec5_1.conda
   hash:
-    md5: 1fd947fae149960538fc941b8f122bc1
-    sha256: 517c17b24349476535db4da7d1cd31538dadf2c77f9f7f7d8be6b7dc5dfbb636
+    md5: 2290b2575ec04fd4a4326123fd7f47d5
+    sha256: d71d5a345565b51a079119775710b7015003d0a89b5ebd49d7113d80eebfeea1
   category: main
   optional: false
 - name: psutil
@@ -11849,12 +11849,12 @@ package:
   platform: osx-arm64
   dependencies:
     __osx: '>=11.0'
-    python: 3.12.*
+    python: ''
     python_abi: 3.12.*
-  url: https://conda.anaconda.org/conda-forge/osx-arm64/psutil-7.2.2-py312hb3ab3e3_0.conda
+  url: https://conda.anaconda.org/conda-forge/osx-arm64/psutil-7.2.2-py312hbd136b4_1.conda
   hash:
-    md5: fd856899666759403b3c16dcba2f56ff
-    sha256: 6d0e21c76436374635c074208cfeee62a94d3c37d0527ad67fd8a7615e546a05
+    md5: 3be42c7b6b84eab3f78510a705645f2d
+    sha256: fe050c31fff80df0f6f564c45f70372a9251296be0889eb9f1e919c4bc6c1d26
   category: main
   optional: false
 - name: psutil
@@ -11867,10 +11867,10 @@ package:
     ucrt: '>=10.0.20348.0'
     vc: '>=14.3,<15'
     vc14_runtime: '>=14.44.35208'
-  url: https://conda.anaconda.org/conda-forge/win-64/psutil-7.2.2-py312he5662c2_0.conda
+  url: https://conda.anaconda.org/conda-forge/win-64/psutil-7.2.2-py312he5662c2_1.conda
   hash:
-    md5: a2724c93b745fc7861948eb8b9f6679a
-    sha256: edffc84c001a05b996b5f8607c8164432754e86ec9224e831cd00ebabdec04e7
+    md5: 14ea08081e760cf916895c6bd80e4500
+    sha256: f0df1874d646c57ef1c4908a1e8fa4139b76fb260a2001332bf145cff753f0bb
   category: main
   optional: false
 - name: psygnal
