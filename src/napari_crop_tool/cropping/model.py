@@ -27,9 +27,9 @@ class CroppingModel:
         }
 
         # Compute default range (in px index units)
-        self.min_um = np.array([self.viewer.dims.range[i][0] 
+        self.min_um = np.array([self.viewer.dims.range[i][0]
                            for i in range(self.shapes_layer.ndim)])
-        self.max_um = np.array([self.viewer.dims.range[i][1] 
+        self.max_um = np.array([self.viewer.dims.range[i][1]
                            for i in range(self.shapes_layer.ndim)])
         self.min_px = np.round(self.min_um / np.array(self.scale)).astype(int)
         self.max_px = np.round(self.max_um / np.array(self.scale)).astype(int)
@@ -47,29 +47,29 @@ class CroppingModel:
     def get_track_axis(self, idx: int) -> int:
         val = self.shapes_layer.properties["track_axis"][idx]
         return -1 if np.isnan(val) else int(val)
-    
+
     def get_scroll_start_px(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
         val = self.shapes_layer.properties["start_idx"][idx]
-        return (self.min_px[curr_axis] if np.isnan(val) 
+        return (self.min_px[curr_axis] if np.isnan(val)
                 else int(val / self.scale[curr_axis]))
 
     def get_scroll_end_px(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
         val = self.shapes_layer.properties["end_idx"][idx]
-        return (self.max_px[curr_axis] if np.isnan(val) 
+        return (self.max_px[curr_axis] if np.isnan(val)
                 else int(val / self.scale[curr_axis]))
-    
+
     def get_scroll_start_um(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
         val = self.shapes_layer.properties["start_idx"][idx]
-        return (self.min_um[curr_axis] if np.isnan(val) 
+        return (self.min_um[curr_axis] if np.isnan(val)
                 else val)
 
     def get_scroll_end_um(self, idx: int) -> int | float:
         curr_axis = self.get_track_axis(idx)
         val = self.shapes_layer.properties["end_idx"][idx]
-        return (self.max_um[curr_axis] if np.isnan(val) 
+        return (self.max_um[curr_axis] if np.isnan(val)
                 else val)
 
     def set_scroll_start_um(self, idx: int, curr_index: int):
@@ -93,13 +93,28 @@ class CroppingModel:
         self.shapes_layer.data = []
 
     def delete_roi(self, idx: int):
+        """Remove ROI `idx` together with its property row.
+
+        napari has no idea *which* shape disappeared: when `data` shrinks it
+        simply truncates the feature table from the end.  Deleting the middle
+        of three ROIs therefore leaves rows [0, 1] attached to shapes [0, 2],
+        so every ROI after the deleted one inherits its neighbour's slice
+        range and tracked axis.  Drop the matching row explicitly and write
+        the properties back after the data.
+        """
         data = list(self.shapes_layer.data)
 
         if idx < 0 or idx >= len(data):
             return
 
+        props = {
+            key: np.delete(np.asarray(values), idx)
+            for key, values in self.shapes_layer.properties.items()
+        }
+
         del data[idx]
         self.shapes_layer.data = data
+        self.shapes_layer.properties = props
         self.sync_properties()
 
     def set_rectangle_size(self, idx: int, size_x: float | None = None, size_y: float | None = None):
@@ -153,11 +168,11 @@ class CroppingModel:
         n = self.num_rois()
         self.shapes_layer.properties = {
             "id": np.array([str(i) for i in range(n)], dtype=str),
-            "start_idx": (np.array([self.get_scroll_start_um(i) for i in range(n)], 
+            "start_idx": (np.array([self.get_scroll_start_um(i) for i in range(n)],
                                     dtype=float)),
-            "end_idx": (np.array([self.get_scroll_end_um(i) for i in range(n)], 
+            "end_idx": (np.array([self.get_scroll_end_um(i) for i in range(n)],
                                   dtype=float)),
-            "track_axis": (np.array([self.get_track_axis(i) for i in range(n)], 
+            "track_axis": (np.array([self.get_track_axis(i) for i in range(n)],
                                   dtype=float)),
         }
 
@@ -177,8 +192,8 @@ class CroppingModel:
                     start_um = self.get_scroll_start_um(i)
                     end_um = self.get_scroll_end_um(i)
                 else:
-                    start_um = roi[:, axis].min()
-                    end_um = roi[:, axis].max()
+                    start_um = roi[:, axis].min() * self.scale[axis]
+                    end_um = roi[:, axis].max() * self.scale[axis]
                 
                 roi_dict[f"{id_to_axis[axis]}_start"] = np.round(min(start_um, end_um), 3)
                 roi_dict[f"{id_to_axis[axis]}_end"] = np.round(max(start_um, end_um), 3)
@@ -186,8 +201,3 @@ class CroppingModel:
 
         prefix = f"{tag}_roi_" if tag else "roi_"
         roi_df.index = [f"{prefix}{i:02}" for i in range(len(roi_df))]
-
-        
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        roi_df.to_csv(out_path, index=True)
-        return out_path
