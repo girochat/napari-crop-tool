@@ -10,4 +10,4 @@ dependencies:
   - pip
   - pip:
       - napari-animation
-      - napari==0.9.0rc1
+      - napari==0.9.0

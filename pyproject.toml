@@ -30,7 +30,7 @@ dev = [
     ]
 
 napari = [
-    "napari[pyqt6]",
+    "napari==0.9.0",
     "napari-ome-zarr"
 ]
 
