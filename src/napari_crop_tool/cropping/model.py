@@ -76,7 +76,7 @@ class CroppingModel:
         props = dict(self.shapes_layer.properties)
         curr_axis = self.get_track_axis(idx)
         start_idx = props["start_idx"].copy()
-        start_idx[idx] = curr_index * self.scale[curr_axis]
+        start_idx[idx] = curr_index
         props["start_idx"] = start_idx
         self.shapes_layer.properties = props
 
@@ -84,7 +84,7 @@ class CroppingModel:
         props = dict(self.shapes_layer.properties)
         curr_axis = self.get_track_axis(idx)
         end_idx = props["end_idx"].copy()
-        end_idx[idx] = curr_index * self.scale[curr_axis]
+        end_idx[idx] = curr_index
         props["end_idx"] = end_idx
         self.shapes_layer.properties = props
 
@@ -139,7 +139,7 @@ class CroppingModel:
             size_x = x_max - x_min
 
         curr_axis = self.get_track_axis(idx)
-        slice_idx = self.viewer.dims.current_step[curr_axis]
+        slice_idx = self.viewer.dims.point[curr_axis]
 
         # Update ROI to new size
         new_roi = roi.copy()

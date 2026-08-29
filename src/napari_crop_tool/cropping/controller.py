@@ -1,6 +1,7 @@
 # cropping/controller.py
 from __future__ import annotations
 from pathlib import Path
+import numpy as np
 from contextlib import contextmanager
 from qtpy.QtWidgets import QMessageBox
 
@@ -38,9 +39,11 @@ class CroppingController:
         self,
         model: CroppingModel,
         gui: CroppingGUIQt,
+        data_boundary: tuple,
     ):
         self.model = model
         self.gui = gui
+        self.data_boundary = data_boundary
         self.selected_roi_idx: int | None = None
         self._restoring_selection = False
         self._suspend_roi_sync = False
@@ -168,7 +171,7 @@ class CroppingController:
 
         curr_shapes_data = self.model.shapes_layer.data
         curr_axis = self.model.viewer.dims.order[0]
-        slice_idx = self.model.viewer.dims.current_step[curr_axis]
+        slice_idx = layer.world_to_data(self.model.viewer.dims.point)[curr_axis]
 
         moved = False
         for i in range(self.model.num_rois()):
@@ -214,6 +217,14 @@ class CroppingController:
 
         self.model.sync_properties()
 
+        # Ensure drawn ROI is among target layer bounds
+        hi = self.data_boundary
+        data = self.model.shapes_layer.data
+        clipped = [np.clip(d, (0, 0, 0), hi) for d in data]
+        if any(not np.array_equal(a, b) for a, b in zip(data, clipped)):
+            with self._suspend_sync():
+                self.model.shapes_layer.data = clipped
+
         roi_list = []
         for i in range(n):
             curr_axis = self.model.get_track_axis(i)
@@ -246,7 +257,7 @@ class CroppingController:
             return
 
         curr_axis = self.model.get_track_axis(idx)
-        slice_idx = self.model.viewer.dims.current_step[curr_axis]
+        slice_idx = self.model.viewer.dims.point[curr_axis]
         self.model.set_scroll_start_um(idx, slice_idx)
         self.update_rois()
 
@@ -257,7 +268,7 @@ class CroppingController:
             return
 
         curr_axis = self.model.get_track_axis(idx)
-        slice_idx = self.model.viewer.dims.current_step[curr_axis]
+        slice_idx = self.model.viewer.dims.point[curr_axis]
         self.model.set_scroll_end_um(idx, slice_idx)
         self.update_rois()
 

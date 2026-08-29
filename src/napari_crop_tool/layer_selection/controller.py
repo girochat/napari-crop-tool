@@ -89,6 +89,7 @@ class LayerSelectionControllerQt():
     def _enter_cropping_session(self):
         assert self.model.target_layer is not None
         layer = self.model.target_layer
+        data_boundary = tuple(layer.data.shape)
 
         # Create shapes layer tailored to dimensionality
         props = (
@@ -124,7 +125,9 @@ class LayerSelectionControllerQt():
         )
         self.cropping_controller = CroppingController(
             cropping_model, 
-            self.cropping_gui)
+            self.cropping_gui,
+            data_boundary,
+        )
 
     def _exit_cropping_session(self):
         self.cropping_gui.set_cropping_enabled(False)
