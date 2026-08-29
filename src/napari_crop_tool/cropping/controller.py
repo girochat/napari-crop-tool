@@ -60,9 +60,11 @@ class CroppingController:
         self.gui.roi_selected.connect(self.on_roi_selected_from_list)
         self.gui.delete_selected_clicked.connect(self.on_delete_selected)
         self.gui.set_rectangle_size_clicked.connect(self.on_set_rectangle_size)
+        self.model.shapes_layer.events.mode.connect(self._fix_cursor)
 
         # Initial paint
         self.update_rois()
+
 
     def dispose(self):
         """Disconnect from napari so a closed session stops receiving events."""
@@ -72,6 +74,7 @@ class CroppingController:
             self.model.shapes_layer.events.highlight.disconnect(
                 self._on_shapes_highlight_changed
             )
+            self.model.shapes_layer.events.mode.disconnect(self._fix_cursor)
         except (TypeError, ValueError, RuntimeError):
             # Layer already removed / emitter already gone.
             pass
@@ -91,6 +94,10 @@ class CroppingController:
             yield
         finally:
             self._suspend_roi_sync = old
+
+    def _fix_cursor(self, event=None):
+        if self.model.shapes_layer.cursor == 'cross':
+            self.model.shapes_layer.cursor = 'crosshair'
 
     # ---------- selection ----------
     def _apply_selected_roi(self):
